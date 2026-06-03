@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traçabilité Cookies</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f0eb; min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: #3d2b1f; color: white; padding: 16px 20px; text-align: center; }
+  .header h1 { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+  .header p { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+
+  /* TABS */
+  .tabs { display: flex; background: #2c1f14; }
+  .tab { flex: 1; padding: 14px 8px; text-align: center; color: rgba(255,255,255,0.6); font-size: 13px; font-weight: 600; cursor: pointer; letter-spacing: 0.5px; border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .tab.active { color: #f5c842; border-bottom-color: #f5c842; background: rgba(255,255,255,0.05); }
+
+  /* CONTENT */
+  .content { display: none; padding: 20px 16px; max-width: 600px; margin: 0 auto; }
+  .content.active { display: block; }
+
+  /* CARD */
+  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .card h2 { font-size: 15px; font-weight: 700; color: #3d2b1f; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+  /* FORM */
+  label { display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  input[type="text"] { width: 100%; padding: 12px 14px; border: 2px solid #e8e0d8; border-radius: 8px; font-size: 15px; color: #3d2b1f; outline: none; transition: border-color 0.2s; margin-bottom: 14px; }
+  input[type="text"]:focus { border-color: #f5c842; }
+  input[type="text"]::placeholder { color: #bbb; }
+
+  /* FILE UPLOAD */
+  .upload-zone { border: 2px dashed #d4c9be; border-radius: 10px; padding: 24px 16px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 14px; background: #faf8f5; }
+  .upload-zone:hover, .upload-zone.dragover { border-color: #f5c842; background: #fffcf0; }
+  .upload-zone .icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-zone p { font-size: 14px; color: #888; }
+  .upload-zone span { font-size: 12px; color: #bbb; }
+  input[type="file"] { display: none; }
+
+  /* FACTURES LIST */
+  .factures-list { margin-bottom: 14px; }
+  .facture-item { display: flex; align-items: center; gap: 8px; background: #f5f0eb; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; }
+  .facture-item .num { flex: 1; font-size: 14px; font-weight: 600; color: #3d2b1f; }
+  .facture-item .source { font-size: 11px; color: #888; background: white; padding: 2px 6px; border-radius: 4px; }
+  .facture-item .del { color: #e74c3c; cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; }
+  .facture-item input { flex: 1; border: 1px solid #ddd; border-radius: 6px; padding: 4px 8px; font-size: 13px; }
+
+  /* PROCESSING */
+  .processing { display: none; align-items: center; gap: 10px; padding: 12px; background: #fffcf0; border-radius: 8px; margin-bottom: 14px; font-size: 13px; color: #888; }
+  .processing.show { display: flex; }
+  .spinner { width: 16px; height: 16px; border: 2px solid #f5c842; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* BUTTON */
+  .btn { width: 100%; padding: 15px; background: #3d2b1f; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; transition: background 0.2s; }
+  .btn:hover { background: #5a3f2e; }
+  .btn:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-success { background: #27ae60; }
+  .btn-success:hover { background: #2ecc71; }
+
+  /* SUCCESS */
+  .success-msg { display: none; background: #d4edda; color: #155724; border-radius: 8px; padding: 12px 16px; font-size: 14px; font-weight: 600; margin-bottom: 14px; text-align: center; }
+  .success-msg.show { display: block; }
+
+  /* ERROR */
+  .error-msg { display: none; background: #f8d7da; color: #721c24; border-radius: 8px; padding: 12px 16px; font-size: 14px; margin-bottom: 14px; }
+  .error-msg.show { display: block; }
+
+  /* FACTURES TAB TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #3d2b1f; color: white; padding: 10px 12px; text-align: left; font-weight: 600; white-space: nowrap; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f0ebe4; color: #3d2b1f; white-space: nowrap; }
+  td:last-child { white-space: normal; word-break: break-word; }
+  tr:hover td { background: #faf8f5; }
+  .empty-state { text-align: center; padding: 40px 20px; color: #aaa; font-size: 14px; }
+
+  /* CONFIG */
+  .config-note { background: #fff8e1; border-left: 4px solid #f5c842; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 13px; color: #7a6200; margin-bottom: 16px; line-height: 1.5; }
+  .config-note strong { display: block; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🍪 TRAÇABILITÉ COOKIES</h1>
+  <p>Atelier de production</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('premix')">PREMIX</div>
+  <div class="tab" onclick="switchTab('production')">PRODUCTION</div>
+  <div class="tab" onclick="switchTab('factures')">FACTURES</div>
+</div>
+
+<!-- ===== ONGLET PREMIX ===== -->
+<div id="tab-premix" class="content active">
+  <div class="card">
+    <h2>🧁 Saisie Premix</h2>
+
+    <div class="config-note" id="config-note-premix">
+      <strong>⚙️ Configuration requise</strong>
+      Renseigne l'URL de ton Google Apps Script ci-dessous pour activer la synchronisation avec Google Sheets.
+    </div>
+
+    <label>URL Google Apps Script</label>
+    <input type="text" id="script-url-premix" placeholder="https://script.google.com/macros/s/..." oninput="saveConfig()">
+
+    <label>Ton prénom</label>
+    <input type="text" id="premix-nom" placeholder="ex: Lila">
+
+    <label>Code Premix</label>
+    <input type="text" id="premix-code" placeholder="ex: PMX-260603-01">
+
+    <label>Factures utilisées</label>
+    <div class="factures-list" id="premix-factures-list"></div>
+
+    <div class="processing" id="premix-processing">
+      <div class="spinner"></div>
+      <span id="premix-processing-text">Lecture du document en cours...</span>
+    </div>
+
+    <div class="upload-zone" id="premix-upload-zone" onclick="document.getElementById('premix-file').click()">
+      <div class="icon">📄</div>
+      <p>Appuie ici pour ajouter une facture</p>
+      <span>PDF ou photo acceptés</span>
+    </div>
+    <input type="file" id="premix-file" accept=".pdf,image/*" multiple onchange="handleFiles(this.files, 'premix')">
+
+    <div class="success-msg" id="premix-success">✅ Enregistré dans Google Sheets !</div>
+    <div class="error-msg" id="premix-error"></div>
+
+    <button class="btn" onclick="submitPremix()">Enregistrer dans Google Sheets</button>
+  </div>
+</div>
+
+<!-- ===== ONGLET PRODUCTION ===== -->
+<div id="tab-production" class="content">
+  <div class="card">
+    <h2>🏭 Saisie Production</h2>
+
+    <div class="config-note" id="config-note-production">
+      <strong>⚙️ Configuration requise</strong>
+      Renseigne l'URL de ton Google Apps Script ci-dessous pour activer la synchronisation avec Google Sheets.
+    </div>
+
+    <label>URL Google Apps Script</label>
+    <input type="text" id="script-url-production" placeholder="https://script.google.com/macros/s/..." oninput="saveConfig()">
+
+    <label>Ton prénom</label>
+    <input type="text" id="production-nom" placeholder="ex: Alexandre">
+
+    <label>Code Premix utilisé</label>
+    <input type="text" id="production-pmx" placeholder="ex: PMX-260603-01">
+
+    <label>Code Production</label>
+    <input type="text" id="production-code" placeholder="ex: SUZ-260604-01">
+
+    <label>Factures utilisées</label>
+    <div class="factures-list" id="production-factures-list"></div>
+
+    <div class="processing" id="production-processing">
+      <div class="spinner"></div>
+      <span id="production-processing-text">Lecture du document en cours...</span>
+    </div>
+
+    <div class="upload-zone" id="production-upload-zone" onclick="document.getElementById('production-file').click()">
+      <div class="icon">📄</div>
+      <p>Appuie ici pour ajouter une facture</p>
+      <span>PDF ou photo acceptés</span>
+    </div>
+    <input type="file" id="production-file" accept=".pdf,image/*" multiple onchange="handleFiles(this.files, 'production')">
+
+    <div class="success-msg" id="production-success">✅ Enregistré dans Google Sheets !</div>
+    <div class="error-msg" id="production-error"></div>
+
+    <button class="btn" onclick="submitProduction()">Enregistrer dans Google Sheets</button>
+  </div>
+</div>
+
+<!-- ===== ONGLET FACTURES ===== -->
+<div id="tab-factures" class="content">
+  <div class="card">
+    <h2>📋 Récapitulatif des lots</h2>
+
+    <label>URL Google Apps Script</label>
+    <input type="text" id="script-url-factures" placeholder="https://script.google.com/macros/s/..." oninput="saveConfig()" style="margin-bottom:14px">
+
+    <button class="btn" onclick="loadFactures()" style="margin-bottom:16px">🔄 Actualiser</button>
+
+    <div class="success-msg" id="factures-success"></div>
+    <div class="error-msg" id="factures-error"></div>
+
+    <div class="table-wrap">
+      <table id="factures-table">
+        <thead>
+          <tr>
+            <th>Code Production</th>
+            <th>Premix</th>
+            <th>Responsable</th>
+            <th>Factures</th>
+          </tr>
+        </thead>
+        <tbody id="factures-tbody">
+          <tr><td colspan="3" class="empty-state">Appuie sur Actualiser pour charger les données</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== PDF.js setup =====
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ===== État de l'app =====
+const state = {
+  premix: { factures: [] },
+  production: { factures: [] }
+};
+
+// ===== URL fixe du script =====
+const FIXED_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxgfwKwnuxZQ9vgz0B6LLmAKBLX-gwLlEVqZ78KuDdcPaMBlAzoWPv5hDhpWBhiGqqI/exec';
+
+function saveConfig() {
+  const nom = document.getElementById('premix-nom').value;
+  if (nom) localStorage.setItem('premixNom', nom);
+  const nomP = document.getElementById('production-nom').value;
+  if (nomP) localStorage.setItem('productionNom', nomP);
+}
+
+function loadConfig() {
+  // Injecter l'URL fixe partout
+  ['premix','production','factures'].forEach(t => {
+    const el = document.getElementById('script-url-' + t);
+    if (el) {
+      el.value = FIXED_SCRIPT_URL;
+      el.style.display = 'none'; // Cacher le champ, c'est déjà configuré
+      const label = el.previousElementSibling;
+      if (label && label.tagName === 'LABEL') label.style.display = 'none';
+    }
+  });
+  // Cacher les notes de config
+  ['config-note-premix','config-note-production'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const nom = localStorage.getItem('premixNom') || '';
+  if (nom) document.getElementById('premix-nom').value = nom;
+  const nomP = localStorage.getItem('productionNom') || '';
+  if (nomP) document.getElementById('production-nom').value = nomP;
+}
+
+// ===== Tabs =====
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['premix','production','factures'][i] === name);
+  });
+  document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ===== Rendu liste factures =====
+function renderFactures(tab) {
+  const list = document.getElementById(tab + '-factures-list');
+  list.innerHTML = '';
+  state[tab].factures.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'facture-item';
+    div.innerHTML = `
+      <input value="${f.num}" onchange="state['${tab}'].factures[${i}].num = this.value" />
+      <span class="source">${f.source}</span>
+      <span class="del" onclick="removeFacture('${tab}', ${i})">×</span>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function removeFacture(tab, i) {
+  state[tab].factures.splice(i, 1);
+  renderFactures(tab);
+}
+
+// ===== Extraction numéros de facture depuis PDF =====
+// Patterns PRIORITAIRES — cherchés en premier, on s'arrête si on trouve
+const PRIORITY_PATTERNS = [
+  // Foodflow : "FACTURE INV/2026/01562"
+  /\bFACTURE\s+(INV\/\d{4}\/\d+)/i,
+  // Format "Facture n° XXXX" ou "Facture : XXXX"
+  /\bfacture\s*(?:n[°o°]?\s*:?\s*)([A-Z0-9]{2,}[\/\-][A-Z0-9\/\-]{3,})/i,
+  // Format "Invoice no XXXX"
+  /\binvoice\s*(?:no|n°|number|#)?\s*:?\s*([A-Z0-9]{2,}[\/\-][A-Z0-9\/\-]{3,})/i,
+  // Format numérique pur "32/2026/06824"
+  /\b(\d{2}\/\d{4}\/\d{5,})\b/,
+  // AND32/SO... ou MP32/...
+  /\b((?:AND|MP)\d{2}\/[A-Z]{2}\d+)\b/i,
+  // HY + 8 chiffres
+  /\b(HY\d{8})\b/,
+  // S + 6 chiffres (commande, utilisé seulement en fallback)
+  /\b(S\d{6})\b/,
+];
+
+function extractInvoiceNumbers(text) {
+  const found = new Set();
+
+  for (const pattern of PRIORITY_PATTERNS) {
+    const m = text.match(pattern);
+    if (m && m[1]) {
+      found.add(m[1].trim());
+      // Pour les patterns très spécifiques (INV/, AND, MP, HY), on s'arrête
+      if (found.size > 0 && pattern !== PRIORITY_PATTERNS[PRIORITY_PATTERNS.length - 1]) break;
+    }
+  }
+
+  // Si toujours rien, cherche tous les patterns sur tout le texte
+  if (found.size === 0) {
+    for (const pattern of PRIORITY_PATTERNS) {
+      const regex = new RegExp(pattern.source, 'gi');
+      let m;
+      while ((m = regex.exec(text)) !== null) {
+        if (m[1]) found.add(m[1].trim());
+      }
+    }
+  }
+
+  return [...found].slice(0, 8);
+}
+
+async function extractFromPDF(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+  for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map(item => item.str).join(' ') + '\n';
+  }
+  return extractInvoiceNumbers(fullText);
+}
+
+async function extractFromImage(file) {
+  // Pour les images, on demande à l'utilisateur de saisir manuellement
+  return [];
+}
+
+// ===== Gestion des fichiers =====
+async function handleFiles(files, tab) {
+  if (!files.length) return;
+
+  const proc = document.getElementById(tab + '-processing');
+  const procText = document.getElementById(tab + '-processing-text');
+  proc.classList.add('show');
+
+  for (const file of files) {
+    procText.textContent = `Lecture de ${file.name}...`;
+    try {
+      let nums = [];
+      if (file.type === 'application/pdf') {
+        nums = await extractFromPDF(file);
+      } else if (file.type.startsWith('image/')) {
+        nums = await extractFromImage(file);
+      }
+
+      if (nums.length > 0) {
+        nums.forEach(num => {
+          if (!state[tab].factures.find(f => f.num === num)) {
+            state[tab].factures.push({ num, source: file.name });
+          }
+        });
+      } else {
+        // Aucun numéro trouvé : ajouter une entrée manuelle
+        state[tab].factures.push({ num: '', source: file.name + ' (saisie manuelle)' });
+      }
+      renderFactures(tab);
+    } catch (e) {
+      console.error(e);
+      state[tab].factures.push({ num: '', source: file.name + ' (erreur lecture)' });
+      renderFactures(tab);
+    }
+  }
+
+  proc.classList.remove('show');
+  // Reset input
+  document.getElementById(tab + '-file').value = '';
+}
+
+// Drag & drop
+['premix', 'production'].forEach(tab => {
+  const zone = document.getElementById(tab + '-upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    handleFiles(e.dataTransfer.files, tab);
+  });
+});
+
+// ===== Soumission =====
+async function submitPremix() {
+  const url = document.getElementById('script-url-premix').value.trim() || FIXED_SCRIPT_URL;
+  const nom = document.getElementById('premix-nom').value.trim();
+  const code = document.getElementById('premix-code').value.trim();
+  const factures = state.premix.factures.map(f => f.num).filter(Boolean);
+
+  const errEl = document.getElementById('premix-error');
+  errEl.classList.remove('show');
+  document.getElementById('premix-success').classList.remove('show');
+
+  if (!url) { errEl.textContent = "⚠️ Renseigne l'URL Google Apps Script."; errEl.classList.add('show'); return; }
+  if (!code) { errEl.textContent = "⚠️ Renseigne le code premix."; errEl.classList.add('show'); return; }
+  if (!factures.length) { errEl.textContent = "⚠️ Ajoute au moins une facture."; errEl.classList.add('show'); return; }
+
+  localStorage.setItem('premixNom', nom);
+
+  const btn = document.querySelector('#tab-premix .btn');
+  btn.disabled = true;
+  btn.textContent = 'Envoi en cours...';
+
+  try {
+    await sendToSheets(url, { action: 'premix', nom, code, factures });
+    document.getElementById('premix-success').classList.add('show');
+    document.getElementById('premix-code').value = '';
+    state.premix.factures = [];
+    renderFactures('premix');
+  } catch(e) {
+    errEl.textContent = '❌ Erreur : ' + e.message;
+    errEl.classList.add('show');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Enregistrer dans Google Sheets';
+}
+
+async function submitProduction() {
+  const url = document.getElementById('script-url-production').value.trim() || FIXED_SCRIPT_URL;
+  const nom = document.getElementById('production-nom').value.trim();
+  const pmx = document.getElementById('production-pmx').value.trim();
+  const code = document.getElementById('production-code').value.trim();
+  const factures = state.production.factures.map(f => f.num).filter(Boolean);
+
+  const errEl = document.getElementById('production-error');
+  errEl.classList.remove('show');
+  document.getElementById('production-success').classList.remove('show');
+
+  if (!url) { errEl.textContent = "⚠️ Renseigne l'URL Google Apps Script."; errEl.classList.add('show'); return; }
+  if (!pmx) { errEl.textContent = "⚠️ Renseigne le code premix utilisé."; errEl.classList.add('show'); return; }
+  if (!code) { errEl.textContent = "⚠️ Renseigne le code production."; errEl.classList.add('show'); return; }
+  if (!factures.length) { errEl.textContent = "⚠️ Ajoute au moins une facture."; errEl.classList.add('show'); return; }
+
+  localStorage.setItem('productionNom', nom);
+
+  const btn = document.querySelector('#tab-production .btn');
+  btn.disabled = true;
+  btn.textContent = 'Envoi en cours...';
+
+  try {
+    await sendToSheets(url, { action: 'production', nom, pmx, code, factures });
+    document.getElementById('production-success').classList.add('show');
+    document.getElementById('production-code').value = '';
+    document.getElementById('production-pmx').value = '';
+    state.production.factures = [];
+    renderFactures('production');
+  } catch(e) {
+    errEl.textContent = '❌ Erreur : ' + e.message;
+    errEl.classList.add('show');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Enregistrer dans Google Sheets';
+}
+
+// ===== Envoi vers Google Sheets via Apps Script =====
+async function sendToSheets(url, data) {
+  const response = await fetch(url, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  // no-cors = pas de réponse lisible, on suppose que ça a marché
+  return true;
+}
+
+// ===== Chargement onglet Factures =====
+async function loadFactures() {
+  const url = document.getElementById('script-url-factures').value.trim() || FIXED_SCRIPT_URL;
+  const errEl = document.getElementById('factures-error');
+  const succEl = document.getElementById('factures-success');
+  errEl.classList.remove('show');
+  succEl.classList.remove('show');
+
+  if (!url) { errEl.textContent = "⚠️ Renseigne l'URL Google Apps Script."; errEl.classList.add('show'); return; }
+
+  const tbody = document.getElementById('factures-tbody');
+  tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Chargement...</td></tr>';
+
+  try {
+    const response = await fetch(url + '?action=getFactures');
+    const data = await response.json();
+    tbody.innerHTML = '';
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Aucune donnée</td></tr>';
+      return;
+    }
+    data.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${row.codeProduction || '-'}</td><td>${row.premix || '-'}</td><td>${row.responsable || '-'}</td><td>${(row.factures || []).join(', ')}</td>`;
+      tbody.appendChild(tr);
+    });
+    succEl.textContent = `✅ ${data.length} lot(s) chargé(s)`;
+    succEl.classList.add('show');
+  } catch(e) {
+    errEl.textContent = '❌ Impossible de charger les données.';
+    errEl.classList.add('show');
+    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Erreur de chargement</td></tr>';
+  }
+}
+
+// ===== Init =====
+loadConfig();
+</script>
+</body>
+</html>
