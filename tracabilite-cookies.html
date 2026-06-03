@@ -19,7 +19,7 @@
   .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
   .card h2 { font-size: 15px; font-weight: 700; color: #d44218; margin-bottom: 16px; }
   label { display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-  input[type="text"] { width: 100%; padding: 12px 14px; border: 2px solid #e8e0d8; border-radius: 8px; font-size: 15px; color: #3d2b1f; outline: none; transition: border-color 0.2s; margin-bottom: 14px; }
+  input[type="text"] { width: 100%; padding: 12px 14px; border: 2px solid #e8e0d8; border-radius: 8px; font-size: 15px; color: #333; outline: none; transition: border-color 0.2s; margin-bottom: 14px; }
   input[type="text"]:focus { border-color: #0662aa; }
   input[type="text"]::placeholder { color: #bbb; }
   .upload-zone { border: 2px dashed #d4c9be; border-radius: 10px; padding: 24px 16px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 14px; background: #faf8f5; }
@@ -33,7 +33,7 @@
   .facture-item .del { color: #e74c3c; cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; }
   .facture-item input { flex: 1; border: 1px solid #ddd; border-radius: 6px; padding: 4px 8px; font-size: 13px; }
   .facture-item .source { font-size: 11px; color: #888; background: white; padding: 2px 6px; border-radius: 4px; }
-  .processing { display: none; align-items: center; gap: 10px; padding: 12px; background: #fffcf0; border-radius: 8px; margin-bottom: 14px; font-size: 13px; color: #888; }
+  .processing { display: none; align-items: center; gap: 10px; padding: 12px; background: #f0f6ff; border-radius: 8px; margin-bottom: 14px; font-size: 13px; color: #888; }
   .processing.show { display: flex; }
   .spinner { width: 16px; height: 16px; border: 2px solid #0662aa; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -49,26 +49,22 @@
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th { background: #d44218; color: white; padding: 10px 12px; text-align: left; font-weight: 600; white-space: nowrap; }
-  td { padding: 10px 12px; border-bottom: 1px solid #f0ebe4; color: #3d2b1f; white-space: nowrap; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f0ebe4; color: #333; white-space: nowrap; }
   td:last-child { white-space: normal; word-break: break-word; }
   tr:hover td { background: #faf8f5; }
   .empty-state { text-align: center; padding: 40px 20px; color: #aaa; font-size: 14px; }
 </style>
 </head>
 <body>
-
 <div class="header">
   <h1>🍪 TRAÇABILITÉ COOKIES</h1>
   <p>Atelier de production</p>
 </div>
-
 <div class="tabs">
   <div class="tab active" onclick="switchTab('premix')">PREMIX</div>
   <div class="tab" onclick="switchTab('production')">PRODUCTION</div>
   <div class="tab" onclick="switchTab('factures')">FACTURES</div>
 </div>
-
-<!-- ONGLET PREMIX -->
 <div id="tab-premix" class="content active">
   <div class="card">
     <h2>🧁 Saisie Premix</h2>
@@ -92,7 +88,6 @@
     <div class="error-msg" id="premix-error"></div>
     <button class="btn" onclick="submitPremix()">Enregistrer dans Google Sheets</button>
   </div>
-
   <div class="card">
     <h2>📋 Récap de mes Premix</h2>
     <button class="btn btn-secondary" onclick="loadPremixRecap()" style="margin-bottom:16px">🔄 Actualiser</button>
@@ -108,8 +103,6 @@
     </div>
   </div>
 </div>
-
-<!-- ONGLET PRODUCTION -->
 <div id="tab-production" class="content">
   <div class="card">
     <h2>🏭 Saisie Production</h2>
@@ -136,8 +129,6 @@
     <button class="btn" onclick="submitProduction()">Enregistrer dans Google Sheets</button>
   </div>
 </div>
-
-<!-- ONGLET FACTURES -->
 <div id="tab-factures" class="content">
   <div class="card">
     <h2>📋 Récapitulatif des lots</h2>
@@ -148,26 +139,21 @@
       <table>
         <thead><tr><th>Code Production</th><th>Premix</th><th>Responsable</th><th>Factures</th></tr></thead>
         <tbody id="factures-tbody">
-          <tr><td colspan="4" class="empty-state">Appuie sur Actualiser pour charger les données</td></tr>
+          <tr><td colspan="4" class="empty-state">Appuie sur Actualiser pour charger</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </div>
-
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-const FIXED_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxgfwKwnuxZQ9vgz0B6LLmAKBLX-gwLlEVqZ78KuDdcPaMBlAzoWPv5hDhpWBhiGqqI/exec';
-
+const FIXED_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0BSIEiXAsxDPh5Ch8ehicMJCKi7gRu04m5AlsMrWskE3KCOYaUZihCr3dm2IW62sb/exec';
 const state = { premix: { factures: [] }, production: { factures: [] } };
-
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['premix','production','factures'][i] === name));
   document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
 }
-
 function renderFactures(tab) {
   const list = document.getElementById(tab + '-factures-list');
   list.innerHTML = '';
@@ -178,12 +164,7 @@ function renderFactures(tab) {
     list.appendChild(div);
   });
 }
-
-function removeFacture(tab, i) {
-  state[tab].factures.splice(i, 1);
-  renderFactures(tab);
-}
-
+function removeFacture(tab, i) { state[tab].factures.splice(i, 1); renderFactures(tab); }
 const PRIORITY_PATTERNS = [
   /\bFACTURE\s+(INV\/\d{4}\/\d+)/i,
   /\bfacture\s*(?:n[°o°]?\s*:?\s*)([A-Z0-9]{2,}[\/\-][A-Z0-9\/\-]{3,})/i,
@@ -193,7 +174,6 @@ const PRIORITY_PATTERNS = [
   /\b(HY\d{8})\b/,
   /\b(S\d{6})\b/,
 ];
-
 function extractInvoiceNumbers(text) {
   const found = new Set();
   for (const pattern of PRIORITY_PATTERNS) {
@@ -202,14 +182,12 @@ function extractInvoiceNumbers(text) {
   }
   if (found.size === 0) {
     for (const pattern of PRIORITY_PATTERNS) {
-      const regex = new RegExp(pattern.source, 'gi');
-      let m;
+      const regex = new RegExp(pattern.source, 'gi'); let m;
       while ((m = regex.exec(text)) !== null) { if (m[1]) found.add(m[1].trim()); }
     }
   }
   return [...found].slice(0, 8);
 }
-
 async function extractFromPDF(file) {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -221,14 +199,12 @@ async function extractFromPDF(file) {
   }
   return extractInvoiceNumbers(fullText);
 }
-
 async function handleFiles(files, tab) {
   if (!files.length) return;
   const proc = document.getElementById(tab + '-processing');
-  const procText = document.getElementById(tab + '-processing-text');
   proc.classList.add('show');
   for (const file of files) {
-    procText.textContent = `Lecture de ${file.name}...`;
+    document.getElementById(tab + '-processing-text').textContent = `Lecture de ${file.name}...`;
     try {
       let nums = file.type === 'application/pdf' ? await extractFromPDF(file) : [];
       if (nums.length > 0) {
@@ -245,26 +221,21 @@ async function handleFiles(files, tab) {
   proc.classList.remove('show');
   document.getElementById(tab + '-file').value = '';
 }
-
 ['premix','production'].forEach(tab => {
   const zone = document.getElementById(tab + '-upload-zone');
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
   zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('dragover'); handleFiles(e.dataTransfer.files, tab); });
 });
-
 async function sendToSheets(data) {
   await fetch(FIXED_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-  return true;
 }
-
 async function submitPremix() {
   const nom = document.getElementById('premix-nom').value.trim();
   const code = document.getElementById('premix-code').value.trim();
   const factures = state.premix.factures.map(f => f.num).filter(Boolean);
   const errEl = document.getElementById('premix-error');
-  errEl.classList.remove('show');
-  document.getElementById('premix-success').classList.remove('show');
+  errEl.classList.remove('show'); document.getElementById('premix-success').classList.remove('show');
   if (!code) { errEl.textContent = "⚠️ Renseigne le code premix."; errEl.classList.add('show'); return; }
   if (!factures.length) { errEl.textContent = "⚠️ Ajoute au moins une facture."; errEl.classList.add('show'); return; }
   localStorage.setItem('premixNom', nom);
@@ -278,15 +249,13 @@ async function submitPremix() {
   } catch(e) { errEl.textContent = '❌ Erreur : ' + e.message; errEl.classList.add('show'); }
   btn.disabled = false; btn.textContent = 'Enregistrer dans Google Sheets';
 }
-
 async function submitProduction() {
   const nom = document.getElementById('production-nom').value.trim();
   const pmx = document.getElementById('production-pmx').value.trim();
   const code = document.getElementById('production-code').value.trim();
   const factures = state.production.factures.map(f => f.num).filter(Boolean);
   const errEl = document.getElementById('production-error');
-  errEl.classList.remove('show');
-  document.getElementById('production-success').classList.remove('show');
+  errEl.classList.remove('show'); document.getElementById('production-success').classList.remove('show');
   if (!pmx) { errEl.textContent = "⚠️ Renseigne le code premix utilisé."; errEl.classList.add('show'); return; }
   if (!code) { errEl.textContent = "⚠️ Renseigne le code production."; errEl.classList.add('show'); return; }
   if (!factures.length) { errEl.textContent = "⚠️ Ajoute au moins une facture."; errEl.classList.add('show'); return; }
@@ -302,7 +271,6 @@ async function submitProduction() {
   } catch(e) { errEl.textContent = '❌ Erreur : ' + e.message; errEl.classList.add('show'); }
   btn.disabled = false; btn.textContent = 'Enregistrer dans Google Sheets';
 }
-
 async function loadPremixRecap() {
   const tbody = document.getElementById('premix-recap-tbody');
   const errEl = document.getElementById('premix-recap-error');
@@ -316,16 +284,12 @@ async function loadPremixRecap() {
     if (!data.length) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Aucune donnée</td></tr>'; return; }
     data.forEach(row => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${row.codePremix || '-'}</td><td>${(row.factures || []).join(', ')}</td>`;
+      tr.innerHTML = `<td>${row.codePremix||'-'}</td><td>${(row.factures||[]).join(', ')}</td>`;
       tbody.appendChild(tr);
     });
     succEl.textContent = `✅ ${data.length} premix chargé(s)`; succEl.classList.add('show');
-  } catch(e) {
-    errEl.textContent = '❌ Impossible de charger les données.'; errEl.classList.add('show');
-    tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Erreur</td></tr>';
-  }
+  } catch(e) { errEl.textContent = '❌ Impossible de charger.'; errEl.classList.add('show'); }
 }
-
 async function loadFactures() {
   const tbody = document.getElementById('factures-tbody');
   const errEl = document.getElementById('factures-error');
@@ -343,12 +307,8 @@ async function loadFactures() {
       tbody.appendChild(tr);
     });
     succEl.textContent = `✅ ${data.length} lot(s) chargé(s)`; succEl.classList.add('show');
-  } catch(e) {
-    errEl.textContent = '❌ Impossible de charger les données.'; errEl.classList.add('show');
-    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Erreur</td></tr>';
-  }
+  } catch(e) { errEl.textContent = '❌ Impossible de charger.'; errEl.classList.add('show'); }
 }
-
 const savedNom = localStorage.getItem('premixNom');
 if (savedNom) document.getElementById('premix-nom').value = savedNom;
 const savedNomP = localStorage.getItem('productionNom');
