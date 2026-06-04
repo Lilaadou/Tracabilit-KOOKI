@@ -463,6 +463,7 @@ async function loadStock(){
     // Grouper par saveur
     const bySaveur={};
     data.forEach(row=>{
+      if(row.big===0&&row.small===0) return; // Lot vide — on l'ignore
       totalBig+=row.big;totalSmall+=row.small;
       if(!bySaveur[row.saveur]) bySaveur[row.saveur]=[];
       bySaveur[row.saveur].push(row);
