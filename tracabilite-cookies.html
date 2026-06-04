@@ -235,7 +235,7 @@ tr:hover td { background: #faf8f5; }
     <div class="error-msg" id="stock-error"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Lot</th><th>Saveur</th><th>Big (165g)</th><th>Small (80g)</th></tr></thead>
+        <thead><tr><th>Lot</th><th>Big (165g)</th><th>Small (80g)</th></tr></thead>
         <tbody id="stock-tbody"><tr><td colspan="4" class="empty-state">Appuie sur Actualiser</td></tr></tbody>
       </table>
     </div>
@@ -454,18 +454,32 @@ async function submitSortie(){
 
 // ===== STOCK =====
 async function loadStock(){
-  const tbody=document.getElementById('stock-tbody');tbody.innerHTML='<tr><td colspan="4" class="empty-state">Chargement...</td></tr>';
+  const tbody=document.getElementById('stock-tbody');tbody.innerHTML='<tr><td colspan="3" class="empty-state">Chargement...</td></tr>';
   document.getElementById('stock-error').classList.remove('show');document.getElementById('stock-success').classList.remove('show');
   try{
     const res=await fetch(SCRIPT_URL+'?action=getStock');const data=await res.json();
     tbody.innerHTML='';let totalBig=0,totalSmall=0;
-    if(!data.length){tbody.innerHTML='<tr><td colspan="4" class="empty-state">Aucun stock enregistré</td></tr>';return;}
+    if(!data.length){tbody.innerHTML='<tr><td colspan="3" class="empty-state">Aucun stock enregistré</td></tr>';return;}
+    // Grouper par saveur
+    const bySaveur={};
     data.forEach(row=>{
       totalBig+=row.big;totalSmall+=row.small;
-      const bc=row.big===0?'qty-empty':row.big<=10?'qty-low':'qty-ok';
-      const sc=row.small===0?'qty-empty':row.small<=10?'qty-low':'qty-ok';
-      const tr=document.createElement('tr');tr.innerHTML=`<td style="font-weight:600;">${row.code}</td><td>${row.saveur}</td><td class="${bc}">${row.big}</td><td class="${sc}">${row.small}</td>`;
-      tbody.appendChild(tr);
+      if(!bySaveur[row.saveur]) bySaveur[row.saveur]=[];
+      bySaveur[row.saveur].push(row);
+    });
+    SAVEURS.forEach(saveur=>{
+      if(!bySaveur[saveur]||!bySaveur[saveur].length) return;
+      // Ligne titre saveur
+      const trTitle=document.createElement('tr');
+      trTitle.innerHTML=`<td colspan="3" style="background:#f5f0eb;font-weight:700;color:#d44218;padding:8px 12px;font-size:13px;">🍪 ${saveur}</td>`;
+      tbody.appendChild(trTitle);
+      bySaveur[saveur].forEach(row=>{
+        const bc=row.big===0?'qty-empty':row.big<=10?'qty-low':'qty-ok';
+        const sc=row.small===0?'qty-empty':row.small<=10?'qty-low':'qty-ok';
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td style="padding-left:20px;font-weight:600;">${row.code}</td><td class="${bc}">${row.big}</td><td class="${sc}">${row.small}</td>`;
+        tbody.appendChild(tr);
+      });
     });
     document.getElementById('total-big').textContent=totalBig;document.getElementById('total-small').textContent=totalSmall;
     document.getElementById('stock-success').textContent='✅ Stock mis à jour';document.getElementById('stock-success').classList.add('show');
