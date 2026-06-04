@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Traçabilité Cookies</title>
+<link rel="apple-touch-icon" href="logo.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,7 +38,6 @@ input[type="file"] { display: none; }
 .btn:disabled { background: #ccc; cursor: not-allowed; }
 .btn-secondary { background: #0662aa; }
 .btn-secondary:hover { background: #055089; }
-.btn-sm { padding: 8px 14px; font-size: 13px; width: auto; display: inline-block; margin-bottom: 0; }
 .success-msg { display: none; background: #d4edda; color: #155724; border-radius: 8px; padding: 12px 16px; font-size: 14px; font-weight: 600; margin-bottom: 12px; text-align: center; }
 .success-msg.show { display: block; }
 .error-msg { display: none; background: #f8d7da; color: #721c24; border-radius: 8px; padding: 12px 16px; font-size: 14px; margin-bottom: 12px; }
@@ -70,98 +70,17 @@ tr:hover td { background: #faf8f5; }
 </style>
 </head>
 <body>
-
 <div class="header">
   <h1>🍪 TRAÇABILITÉ COOKIES</h1>
   <p>Atelier de production</p>
 </div>
-
 <div class="tabs">
   <div class="tab active" onclick="switchTab('reception')">RÉCEPTION</div>
   <div class="tab" onclick="switchTab('premix')">PREMIX</div>
   <div class="tab" onclick="switchTab('production')">PRODUCTION</div>
   <div class="tab" onclick="switchTab('factures')">FACTURES</div>
 </div>
-
-<!-- ONGLET PREMIX -->
-<div id="tab-premix" class="content">
-  <div class="card">
-    <h2>🧁 Saisie Premix</h2>
-    <label>Ton prénom</label>
-    <input type="text" id="premix-nom" placeholder="ex: Lila">
-    <label>Code Premix</label>
-    <input type="text" id="premix-code" placeholder="ex: PMX-260603-01">
-  </div>
-  <div class="card">
-    <h2>📋 Factures utilisées</h2>
-    <p style="font-size:13px; color:#888; margin-bottom:12px;">Coche les factures que tu as utilisées pour ce lot :</p>
-    <div class="invoice-list" id="premix-invoice-list">
-      <div class="empty-invoices">Chargement des factures...</div>
-    </div>
-    <div id="premix-selected-count" class="selected-count" style="display:none;"></div>
-    <div class="success-msg" id="premix-success">✅ Enregistré dans Google Sheets !</div>
-    <div class="error-msg" id="premix-error"></div>
-    <button class="btn" onclick="submitPremix()">Enregistrer dans Google Sheets</button>
-  </div>
-  <div class="card">
-    <h2>📊 Récap de mes Premix</h2>
-    <button class="btn btn-secondary" onclick="loadPremixRecap()" style="margin-bottom:14px">🔄 Actualiser</button>
-    <div class="success-msg" id="premix-recap-success"></div>
-    <div class="error-msg" id="premix-recap-error"></div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Code Premix</th><th>Factures</th></tr></thead>
-        <tbody id="premix-recap-tbody">
-          <tr><td colspan="2" class="empty-state">Appuie sur Actualiser</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ONGLET PRODUCTION -->
-<div id="tab-production" class="content">
-  <div class="card">
-    <h2>🏭 Saisie Production</h2>
-    <label>Ton prénom</label>
-    <input type="text" id="production-nom" placeholder="ex: Alexandre">
-    <label>Code Premix utilisé</label>
-    <input type="text" id="production-pmx" placeholder="ex: PMX-260603-01">
-    <label>Code Production</label>
-    <input type="text" id="production-code" placeholder="ex: SUZ-260604-01">
-  </div>
-  <div class="card">
-    <h2>📋 Factures utilisées</h2>
-    <p style="font-size:13px; color:#888; margin-bottom:12px;">Coche les factures que tu as utilisées pour ce lot :</p>
-    <div class="invoice-list" id="production-invoice-list">
-      <div class="empty-invoices">Chargement des factures...</div>
-    </div>
-    <div id="production-selected-count" class="selected-count" style="display:none;"></div>
-    <div class="success-msg" id="production-success">✅ Enregistré dans Google Sheets !</div>
-    <div class="error-msg" id="production-error"></div>
-    <button class="btn" onclick="submitProduction()">Enregistrer dans Google Sheets</button>
-  </div>
-</div>
-
-<!-- ONGLET FACTURES -->
-<div id="tab-factures" class="content">
-  <div class="card">
-    <h2>📋 Récapitulatif des lots</h2>
-    <button class="btn" onclick="loadFactures()" style="margin-bottom:14px">🔄 Actualiser</button>
-    <div class="success-msg" id="factures-success"></div>
-    <div class="error-msg" id="factures-error"></div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Code Production</th><th>Premix</th><th>Responsable</th><th>Factures</th></tr></thead>
-        <tbody id="factures-tbody">
-          <tr><td colspan="4" class="empty-state">Appuie sur Actualiser</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ONGLET RÉCEPTION -->
+<!-- RÉCEPTION -->
 <div id="tab-reception" class="content active">
   <div class="card">
     <h2>📥 Ajouter une facture</h2>
@@ -188,18 +107,80 @@ tr:hover td { background: #faf8f5; }
   <div class="card">
     <h2>📂 Factures du mois</h2>
     <button class="btn btn-secondary" onclick="loadReceptionList()" style="margin-bottom:14px">🔄 Actualiser</button>
-    <div id="reception-list">
-      <div class="empty-invoices">Appuie sur Actualiser pour charger</div>
+    <div id="reception-list"><div class="empty-invoices">Appuie sur Actualiser pour charger</div></div>
+  </div>
+</div>
+<!-- PREMIX -->
+<div id="tab-premix" class="content">
+  <div class="card">
+    <h2>🧁 Saisie Premix</h2>
+    <label>Ton prénom</label>
+    <input type="text" id="premix-nom" placeholder="ex: Lila">
+    <label>Code Premix</label>
+    <input type="text" id="premix-code" placeholder="ex: PMX-260603-01">
+  </div>
+  <div class="card">
+    <h2>📋 Factures utilisées</h2>
+    <p style="font-size:13px; color:#888; margin-bottom:12px;">Coche les factures que tu as utilisées pour ce lot :</p>
+    <div class="invoice-list" id="premix-invoice-list"><div class="empty-invoices">Chargement...</div></div>
+    <div id="premix-selected-count" class="selected-count" style="display:none;"></div>
+    <div class="success-msg" id="premix-success">✅ Enregistré dans Google Sheets !</div>
+    <div class="error-msg" id="premix-error"></div>
+    <button class="btn" onclick="submitPremix()">Enregistrer dans Google Sheets</button>
+  </div>
+  <div class="card">
+    <h2>📊 Récap de mes Premix</h2>
+    <button class="btn btn-secondary" onclick="loadPremixRecap()" style="margin-bottom:14px">🔄 Actualiser</button>
+    <div class="success-msg" id="premix-recap-success"></div>
+    <div class="error-msg" id="premix-recap-error"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Code Premix</th><th>Factures</th></tr></thead>
+        <tbody id="premix-recap-tbody"><tr><td colspan="2" class="empty-state">Appuie sur Actualiser</td></tr></tbody>
+      </table>
     </div>
   </div>
 </div>
-
+<!-- PRODUCTION -->
+<div id="tab-production" class="content">
+  <div class="card">
+    <h2>🏭 Saisie Production</h2>
+    <label>Ton prénom</label>
+    <input type="text" id="production-nom" placeholder="ex: Alexandre">
+    <label>Code Premix utilisé</label>
+    <input type="text" id="production-pmx" placeholder="ex: PMX-260603-01">
+    <label>Code Production</label>
+    <input type="text" id="production-code" placeholder="ex: SUZ-260604-01">
+  </div>
+  <div class="card">
+    <h2>📋 Factures utilisées</h2>
+    <p style="font-size:13px; color:#888; margin-bottom:12px;">Coche les factures que tu as utilisées pour ce lot :</p>
+    <div class="invoice-list" id="production-invoice-list"><div class="empty-invoices">Chargement...</div></div>
+    <div id="production-selected-count" class="selected-count" style="display:none;"></div>
+    <div class="success-msg" id="production-success">✅ Enregistré dans Google Sheets !</div>
+    <div class="error-msg" id="production-error"></div>
+    <button class="btn" onclick="submitProduction()">Enregistrer dans Google Sheets</button>
+  </div>
+</div>
+<!-- FACTURES -->
+<div id="tab-factures" class="content">
+  <div class="card">
+    <h2>📋 Récapitulatif des lots</h2>
+    <button class="btn" onclick="loadFactures()" style="margin-bottom:14px">🔄 Actualiser</button>
+    <div class="success-msg" id="factures-success"></div>
+    <div class="error-msg" id="factures-error"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Code Production</th><th>Premix</th><th>Responsable</th><th>Factures</th></tr></thead>
+        <tbody id="factures-tbody"><tr><td colspan="4" class="empty-state">Appuie sur Actualiser</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzhsZvTVbKbW6EUGyvBiPZEemxgd2boqBF5m8rruVZsAFhDg7MYvUIxmWjyKxCXSo0A/exec';
-
 const selectedInvoices = { premix: new Set(), production: new Set() };
-let allInvoices = [];
 
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['reception','premix','production','factures'][i] === name));
@@ -223,7 +204,6 @@ async function loadInvoicesForTab(tab) {
   try {
     const res = await fetch(SCRIPT_URL + '?action=getRecentInvoices');
     const data = await res.json();
-    allInvoices = data;
     renderInvoiceList(tab, data);
   } catch(e) {
     listEl.innerHTML = '<div class="empty-invoices">❌ Impossible de charger les factures</div>';
@@ -232,21 +212,15 @@ async function loadInvoicesForTab(tab) {
 
 function renderInvoiceList(tab, invoices) {
   const listEl = document.getElementById(tab + '-invoice-list');
-  if (!invoices.length) { listEl.innerHTML = '<div class="empty-invoices">Aucune facture ce mois-ci.<br>Virginia doit d\'abord en ajouter dans l\'onglet RÉCEPTION.</div>'; return; }
+  if (!invoices.length) { listEl.innerHTML = '<div class="empty-invoices">Aucune facture ce mois-ci.<br>Virginia doit d\'abord en ajouter dans RÉCEPTION.</div>'; return; }
   listEl.innerHTML = '';
   invoices.forEach(inv => {
-    const isNew = daysAgo(inv.date) === "Aujourd'hui" || daysAgo(inv.date) === "Hier";
+    const age = daysAgo(inv.date);
+    const isNew = age === "Aujourd'hui" || age === "Hier";
     const selected = selectedInvoices[tab].has(inv.numero);
     const div = document.createElement('div');
     div.className = 'invoice-item' + (selected ? ' selected' : '');
-    div.innerHTML = `
-      <div class="invoice-checkbox"><span class="invoice-checkbox-check">✓</span></div>
-      <div class="invoice-info">
-        <div class="invoice-num">${inv.numero}</div>
-        <div class="invoice-meta">${inv.fournisseur} · ${daysAgo(inv.date)}</div>
-      </div>
-      <span class="invoice-badge ${isNew ? 'invoice-badge-new' : ''}">${isNew ? 'Nouveau' : daysAgo(inv.date)}</span>
-    `;
+    div.innerHTML = `<div class="invoice-checkbox"><span class="invoice-checkbox-check">✓</span></div><div class="invoice-info"><div class="invoice-num">${inv.numero}</div><div class="invoice-meta">${inv.fournisseur} · ${age}</div></div><span class="invoice-badge ${isNew ? 'invoice-badge-new' : ''}">${isNew ? 'Nouveau' : age}</span>`;
     div.onclick = () => toggleInvoice(tab, inv.numero, div);
     listEl.appendChild(div);
   });
@@ -254,25 +228,16 @@ function renderInvoiceList(tab, invoices) {
 }
 
 function toggleInvoice(tab, numero, el) {
-  if (selectedInvoices[tab].has(numero)) {
-    selectedInvoices[tab].delete(numero);
-    el.classList.remove('selected');
-  } else {
-    selectedInvoices[tab].add(numero);
-    el.classList.add('selected');
-  }
+  if (selectedInvoices[tab].has(numero)) { selectedInvoices[tab].delete(numero); el.classList.remove('selected'); }
+  else { selectedInvoices[tab].add(numero); el.classList.add('selected'); }
   updateSelectedCount(tab);
 }
 
 function updateSelectedCount(tab) {
   const countEl = document.getElementById(tab + '-selected-count');
   const n = selectedInvoices[tab].size;
-  if (n > 0) {
-    countEl.style.display = 'block';
-    countEl.textContent = `✓ ${n} facture${n > 1 ? 's' : ''} sélectionnée${n > 1 ? 's' : ''}`;
-  } else {
-    countEl.style.display = 'none';
-  }
+  if (n > 0) { countEl.style.display = 'block'; countEl.textContent = `✓ ${n} facture${n > 1 ? 's' : ''} sélectionnée${n > 1 ? 's' : ''}`; }
+  else { countEl.style.display = 'none'; }
 }
 
 const PRIORITY_PATTERNS = [
@@ -284,7 +249,6 @@ const PRIORITY_PATTERNS = [
   /\b(HY\d{8})\b/,
   /\b(S\d{6})\b/,
 ];
-
 const SUPPLIER_PATTERNS = [
   { pattern: /foodflow/i, name: 'Foodflow BE' },
   { pattern: /andros/i, name: 'Andros' },
@@ -294,22 +258,13 @@ const SUPPLIER_PATTERNS = [
 ];
 
 function extractInvoiceNumber(text) {
-  for (const pattern of PRIORITY_PATTERNS) {
-    const m = text.match(pattern);
-    if (m && m[1]) return m[1].trim();
-  }
+  for (const p of PRIORITY_PATTERNS) { const m = text.match(p); if (m && m[1]) return m[1].trim(); }
   return '';
 }
-
 function extractSupplier(text) {
-  for (const s of SUPPLIER_PATTERNS) {
-    if (s.pattern.test(text)) return s.name;
-  }
+  for (const s of SUPPLIER_PATTERNS) { if (s.pattern.test(text)) return s.name; }
   const lines = text.split('\n').slice(0, 5);
-  for (const line of lines) {
-    const clean = line.trim();
-    if (clean.length > 3 && clean.length < 40 && /[A-Za-z]/.test(clean)) return clean;
-  }
+  for (const line of lines) { const c = line.trim(); if (c.length > 3 && c.length < 40 && /[A-Za-z]/.test(c)) return c; }
   return '';
 }
 
@@ -327,21 +282,20 @@ async function extractFromPDF(file) {
 
 async function handleReceptionFile(file) {
   if (!file) return;
-  const proc = document.getElementById('reception-processing');
-  proc.classList.add('show');
+  document.getElementById('reception-processing').classList.add('show');
   try {
     const result = await extractFromPDF(file);
     if (result.numero) document.getElementById('reception-numero').value = result.numero;
     if (result.fournisseur) document.getElementById('reception-fournisseur').value = result.fournisseur;
   } catch(e) {}
-  proc.classList.remove('show');
+  document.getElementById('reception-processing').classList.remove('show');
   document.getElementById('reception-file').value = '';
 }
 
-const zone = document.getElementById('reception-upload-zone');
-zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
-zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('dragover'); handleReceptionFile(e.dataTransfer.files[0]); });
+const rzone = document.getElementById('reception-upload-zone');
+rzone.addEventListener('dragover', e => { e.preventDefault(); rzone.classList.add('dragover'); });
+rzone.addEventListener('dragleave', () => rzone.classList.remove('dragover'));
+rzone.addEventListener('drop', e => { e.preventDefault(); rzone.classList.remove('dragover'); handleReceptionFile(e.dataTransfer.files[0]); });
 
 async function sendToSheets(data) {
   await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
@@ -363,6 +317,7 @@ async function submitReception() {
     document.getElementById('reception-success').classList.add('show');
     document.getElementById('reception-fournisseur').value = '';
     document.getElementById('reception-numero').value = '';
+    loadReceptionList();
   } catch(e) { errEl.textContent = '❌ Erreur : ' + e.message; errEl.classList.add('show'); }
   btn.disabled = false; btn.textContent = 'Enregistrer la facture';
 }
@@ -382,8 +337,7 @@ async function submitPremix() {
     await sendToSheets({ action: 'premix', nom, code, factures });
     document.getElementById('premix-success').classList.add('show');
     document.getElementById('premix-code').value = '';
-    selectedInvoices.premix.clear();
-    loadInvoicesForTab('premix');
+    selectedInvoices.premix.clear(); loadInvoicesForTab('premix');
   } catch(e) { errEl.textContent = '❌ Erreur : ' + e.message; errEl.classList.add('show'); }
   btn.disabled = false; btn.textContent = 'Enregistrer dans Google Sheets';
 }
@@ -406,8 +360,7 @@ async function submitProduction() {
     document.getElementById('production-success').classList.add('show');
     document.getElementById('production-code').value = '';
     document.getElementById('production-pmx').value = '';
-    selectedInvoices.production.clear();
-    loadInvoicesForTab('production');
+    selectedInvoices.production.clear(); loadInvoicesForTab('production');
   } catch(e) { errEl.textContent = '❌ Erreur : ' + e.message; errEl.classList.add('show'); }
   btn.disabled = false; btn.textContent = 'Enregistrer dans Google Sheets';
 }
@@ -420,17 +373,10 @@ async function loadPremixRecap() {
     const data = await res.json();
     tbody.innerHTML = '';
     if (!data.length) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Aucune donnée</td></tr>'; return; }
-    data.forEach(row => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${row.codePremix||'-'}</td><td>${(row.factures||[]).join(', ')}</td>`;
-      tbody.appendChild(tr);
-    });
+    data.forEach(row => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${row.codePremix||'-'}</td><td>${(row.factures||[]).join(', ')}</td>`; tbody.appendChild(tr); });
     document.getElementById('premix-recap-success').textContent = `✅ ${data.length} premix chargé(s)`;
     document.getElementById('premix-recap-success').classList.add('show');
-  } catch(e) {
-    document.getElementById('premix-recap-error').textContent = '❌ Impossible de charger.';
-    document.getElementById('premix-recap-error').classList.add('show');
-  }
+  } catch(e) { document.getElementById('premix-recap-error').textContent = '❌ Impossible de charger.'; document.getElementById('premix-recap-error').classList.add('show'); }
 }
 
 async function loadFactures() {
@@ -441,17 +387,10 @@ async function loadFactures() {
     const data = await res.json();
     tbody.innerHTML = '';
     if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Aucune donnée</td></tr>'; return; }
-    data.forEach(row => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${row.codeProduction||'-'}</td><td>${row.premix||'-'}</td><td>${row.responsable||'-'}</td><td>${(row.factures||[]).join(', ')}</td>`;
-      tbody.appendChild(tr);
-    });
+    data.forEach(row => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${row.codeProduction||'-'}</td><td>${row.premix||'-'}</td><td>${row.responsable||'-'}</td><td>${(row.factures||[]).join(', ')}</td>`; tbody.appendChild(tr); });
     document.getElementById('factures-success').textContent = `✅ ${data.length} lot(s) chargé(s)`;
     document.getElementById('factures-success').classList.add('show');
-  } catch(e) {
-    document.getElementById('factures-error').textContent = '❌ Impossible de charger.';
-    document.getElementById('factures-error').classList.add('show');
-  }
+  } catch(e) { document.getElementById('factures-error').textContent = '❌ Impossible de charger.'; document.getElementById('factures-error').classList.add('show'); }
 }
 
 async function loadReceptionList() {
@@ -465,21 +404,15 @@ async function loadReceptionList() {
     data.forEach(inv => {
       const div = document.createElement('div');
       div.className = 'reception-item';
-      div.innerHTML = `<div class="reception-num">${inv.numero}</div><div class="reception-meta">${inv.fournisseur} · ${daysAgo(inv.date)} · Ajouté par ${inv.nom || '?'}</div>`;
+      div.innerHTML = `<div class="reception-num">${inv.numero}</div><div class="reception-meta">${inv.fournisseur} · ${daysAgo(inv.date)} · ${inv.nom || ''}</div>`;
       listEl.appendChild(div);
     });
-  } catch(e) {
-    listEl.innerHTML = '<div class="empty-invoices">❌ Impossible de charger</div>';
-  }
+  } catch(e) { listEl.innerHTML = '<div class="empty-invoices">❌ Impossible de charger</div>'; }
 }
 
-const savedNom = localStorage.getItem('premixNom');
-if (savedNom) document.getElementById('premix-nom').value = savedNom;
-const savedNomP = localStorage.getItem('productionNom');
-if (savedNomP) document.getElementById('production-nom').value = savedNomP;
-const savedNomR = localStorage.getItem('receptionNom');
-if (savedNomR) document.getElementById('reception-nom').value = savedNomR;
-
+const savedNom = localStorage.getItem('premixNom'); if (savedNom) document.getElementById('premix-nom').value = savedNom;
+const savedNomP = localStorage.getItem('productionNom'); if (savedNomP) document.getElementById('production-nom').value = savedNomP;
+const savedNomR = localStorage.getItem('receptionNom'); if (savedNomR) document.getElementById('reception-nom').value = savedNomR;
 loadReceptionList();
 </script>
 </body>
