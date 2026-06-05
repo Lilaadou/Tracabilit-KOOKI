@@ -91,6 +91,22 @@ tr:hover td { background: #faf8f5; }
 .legend { display: flex; gap: 12px; font-size: 11px; color: #888; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 3px; }
 .hint { font-size: 13px; color: #aaa; text-align: center; padding: 20px; background: #f5f0eb; border-radius: 8px; }
+.tag-area { border: 2px solid #e8e0d8; border-radius: 10px; padding: 10px; min-height: 56px; margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; cursor: text; transition: border-color 0.2s; }
+.tag-area:focus-within { border-color: #0662aa; }
+.tag { display: inline-flex; align-items: center; gap: 4px; background: #fde8e8; color: #721c24; border-radius: 6px; padding: 4px 8px; font-size: 13px; font-weight: 600; }
+.tag-x { cursor: pointer; font-size: 16px; line-height: 1; opacity: 0.7; }
+.tag-x:hover { opacity: 1; }
+.tag-input { border: none; outline: none; font-size: 14px; min-width: 100px; background: transparent; padding: 2px 4px; color: #333; flex: 1; }
+.alert-block { border: 1.5px solid #f5c6c6; border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #fff8f8; }
+.alert-pmx-badge { display: inline-block; background: #f0f6ff; color: #0662aa; font-size: 11px; padding: 3px 8px; border-radius: 5px; font-weight: 600; margin-bottom: 4px; }
+.alert-saveur { font-size: 14px; font-weight: 700; color: #d44218; margin-bottom: 8px; }
+.ingr-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 0.5px solid #f5c6c6; }
+.ingr-row:last-child { border-bottom: none; padding-bottom: 0; }
+.red-dot { width: 8px; height: 8px; border-radius: 50%; background: #e74c3c; flex-shrink: 0; }
+.ingr-name-text { flex: 1; font-size: 13px; font-weight: 600; color: #721c24; }
+.resolve-btn { font-size: 11px; padding: 4px 10px; background: white; color: #27ae60; border: 1.5px solid #27ae60; border-radius: 6px; cursor: pointer; white-space: nowrap; font-weight: 600; }
+.resolve-btn:hover { background: #d4edda; }
+.saveur-detected { background: #f0f6ff; border-radius: 8px; padding: 10px 13px; font-size: 15px; font-weight: 700; color: #0662aa; margin-bottom: 12px; }
 </style>
 </head>
 <body>
@@ -105,6 +121,7 @@ tr:hover td { background: #faf8f5; }
   <div class="tab" onclick="switchTab('sortie')">SORTIE FRIGO</div>
   <div class="tab" onclick="switchTab('stock')">STOCK</div>
   <div class="tab" onclick="switchTab('factures')">FACTURES</div>
+  <div class="tab" onclick="switchTab('manquants')">⚠️ MANQUANTS</div>
 </div>
 
 <!-- RÉCEPTION -->
@@ -263,16 +280,40 @@ tr:hover td { background: #faf8f5; }
   </div>
 </div>
 
+<!-- MANQUANTS -->
+<div id="tab-manquants" class="content">
+  <div class="card">
+    <h2>⚠️ Signaler un manquant</h2>
+    <label>Code Premix</label>
+    <input type="text" id="mq-code" placeholder="ex: PMX-260603-01" oninput="detectSaveurMq()">
+    <div id="mq-saveur" style="display:none;">
+      <div class="saveur-detected" id="mq-saveur-text"></div>
+    </div>
+    <label>Ingrédients manquants — tape et appuie sur Entrée</label>
+    <div class="tag-area" id="mq-tag-area" onclick="document.getElementById('mq-tag-input').focus()">
+      <input type="text" id="mq-tag-input" class="tag-input" placeholder="ex: Chocolat blanc..." onkeydown="handleTagInput(event)">
+    </div>
+    <div class="success-msg" id="mq-success">✅ Alerte enregistrée !</div>
+    <div class="error-msg" id="mq-error"></div>
+    <button class="btn" onclick="submitManquant()">Enregistrer l'alerte</button>
+  </div>
+  <div class="card">
+    <h2>🔴 Alertes en cours</h2>
+    <button class="btn btn-secondary" onclick="loadManquants()" style="margin-bottom:14px">🔄 Actualiser</button>
+    <div id="mq-alerts-list"><div class="hint">Appuie sur Actualiser pour charger</div></div>
+  </div>
+</div>
+
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw922JkmsMrWU65cvWkqjdYKVaWmC-4yxF0SVSoKp-DXiXlkEcYzTCJA3eGDFkpFhsB/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBLaF_iW0Z-KCfqjjD-tfcPR-ocFJV_GeA-ZE8wQ8HfQ7kpef1Oahdw4IINq0Xu0iR/exec';
 const SAVEURS = ['SUZZY','JACKY','BENNY','DAVY','MOLLY','WALLY','CHARLY','LENI','EMMY','WOODY','DANNY'];
 const CODE_MAP = {'SUZ':'SUZZY','JAC':'JACKY','BEN':'BENNY','DAV':'DAVY','MOL':'MOLLY','WAL':'WALLY','CHA':'CHARLY','LEN':'LENI','EMM':'EMMY','WOO':'WOODY','DAN':'DANNY'};
 const selectedInvoices = { premix: new Set(), production: new Set() };
 let currentLots = [];
 
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['reception','premix','production','sortie','stock','factures'][i]===name));
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['reception','premix','production','sortie','stock','factures','manquants'][i]===name));
   document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if(name==='premix'||name==='production') loadInvoicesForTab(name);
@@ -503,6 +544,97 @@ async function loadReceptionList(){
   const listEl=document.getElementById('reception-list');listEl.innerHTML='<div class="empty-invoices">Chargement...</div>';
   try{const res=await fetch(SCRIPT_URL+'?action=getRecentInvoices');const data=await res.json();if(!data.length){listEl.innerHTML='<div class="empty-invoices">Aucune facture ce mois-ci</div>';return;}listEl.innerHTML='';data.forEach(inv=>{const div=document.createElement('div');div.className='reception-item';div.innerHTML=`<div class="reception-num">${inv.numero}</div><div class="reception-meta">${inv.fournisseur} · ${daysAgo(inv.date)} · ${inv.nom||''}</div>`;listEl.appendChild(div);});}
   catch(e){listEl.innerHTML='<div class="empty-invoices">❌ Impossible de charger</div>';}
+}
+
+// ===== MANQUANTS =====
+let mqTags = [];
+
+function detectSaveurMq() {
+  const code = document.getElementById('mq-code').value.trim().toUpperCase();
+  const prefix = code.split('-')[0];
+  const saveur = CODE_MAP[prefix];
+  const el = document.getElementById('mq-saveur');
+  if (saveur) { document.getElementById('mq-saveur-text').textContent = '🍪 ' + saveur; el.style.display='block'; }
+  else { el.style.display='none'; }
+}
+
+function handleTagInput(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim();
+    if (val) { mqTags.push(val); renderTags(); e.target.value = ''; }
+  } else if (e.key === 'Backspace' && e.target.value === '' && mqTags.length) {
+    mqTags.pop(); renderTags();
+  }
+}
+
+function renderTags() {
+  const area = document.getElementById('mq-tag-area');
+  const input = document.getElementById('mq-tag-input');
+  area.innerHTML = '';
+  mqTags.forEach((t, i) => {
+    const span = document.createElement('span'); span.className = 'tag';
+    span.innerHTML = `${t} <span class="tag-x" onclick="removeTag(${i})">×</span>`;
+    area.appendChild(span);
+  });
+  area.appendChild(input);
+  input.focus();
+}
+
+function removeTag(i) { mqTags.splice(i, 1); renderTags(); }
+
+async function submitManquant() {
+  const code = document.getElementById('mq-code').value.trim();
+  const prefix = code.split('-')[0].toUpperCase();
+  const saveur = CODE_MAP[prefix] || '';
+  const errEl = document.getElementById('mq-error');
+  errEl.classList.remove('show'); document.getElementById('mq-success').classList.remove('show');
+  if (!code) { errEl.textContent="⚠️ Renseigne le code premix."; errEl.classList.add('show'); return; }
+  if (!mqTags.length) { errEl.textContent="⚠️ Ajoute au moins un ingrédient manquant."; errEl.classList.add('show'); return; }
+  const btn = document.querySelector('#tab-manquants .card:first-child .btn');
+  btn.disabled = true; btn.textContent = 'Envoi en cours...';
+  try {
+    await sendToSheets({ action: 'manquant', code, saveur, ingredients: mqTags, date: new Date().toISOString() });
+    document.getElementById('mq-success').classList.add('show');
+    document.getElementById('mq-code').value = '';
+    document.getElementById('mq-saveur').style.display = 'none';
+    mqTags = []; renderTags();
+  } catch(e) { errEl.textContent = '❌ Erreur : ' + e.message; errEl.classList.add('show'); }
+  btn.disabled = false; btn.textContent = "Enregistrer l'alerte";
+}
+
+async function loadManquants() {
+  const listEl = document.getElementById('mq-alerts-list');
+  listEl.innerHTML = '<div class="hint">Chargement...</div>';
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=getManquants');
+    const data = await res.json();
+    if (!data.length) { listEl.innerHTML = '<div class="hint">✅ Aucun ingrédient manquant !</div>'; return; }
+    listEl.innerHTML = '';
+    data.forEach(alert => {
+      const div = document.createElement('div'); div.className = 'alert-block';
+      div.innerHTML = `<span class="alert-pmx-badge">${alert.code}</span><div class="alert-saveur">🍪 ${alert.saveur||'?'}</div>` +
+        alert.ingredients.map((ing, i) => `
+          <div class="ingr-row">
+            <div class="red-dot"></div>
+            <div class="ingr-name-text">${ing}</div>
+            <button class="resolve-btn" onclick="resolveIngredient('${alert.id}', ${i}, this)">✅ Résolu</button>
+          </div>`).join('');
+      listEl.appendChild(div);
+    });
+  } catch(e) { listEl.innerHTML = '<div class="hint">❌ Impossible de charger</div>'; }
+}
+
+async function resolveIngredient(id, index, btn) {
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    await sendToSheets({ action: 'resolveManquant', id, index });
+    const row = btn.closest('.ingr-row');
+    row.style.opacity = '0.4';
+    row.style.textDecoration = 'line-through';
+    btn.textContent = '✅';
+    setTimeout(() => loadManquants(), 1000);
+  } catch(e) { btn.disabled = false; btn.textContent = '✅ Résolu'; }
 }
 
 const sN=localStorage.getItem('premixNom');if(sN)document.getElementById('premix-nom').value=sN;
