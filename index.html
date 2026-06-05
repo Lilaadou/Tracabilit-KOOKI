@@ -449,6 +449,30 @@ tr:hover td { background: #faf8f5; }
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFDHuFHQ7e61gnR3D0s-YjpTeBLCfCNEgRSfbwiXOslCPvUBnTceblkWWXkgnvCiCV/exec';
+const SUPABASE_URL = 'https://alwxxplqsxauwevcdhaa.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsd3h4cGxxc3hhdXdldmNkaGFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2ODYwNzQsImV4cCI6MjA5NjI2MjA3NH0.wtx_ZrU977d7XyO9fGOZ34u3i6KZZfYkoGLcF_38v4w';
+const sbHeaders = {'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY};
+
+async function supabaseInsert(table, data) {
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/' + table, {
+      method: 'POST',
+      headers: {...sbHeaders, 'Prefer': 'return=minimal'},
+      body: JSON.stringify(data)
+    });
+  } catch(e) { console.error('Supabase error:', e); }
+}
+
+async function supabaseUpsert(table, data, onConflict) {
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
+      method: 'POST',
+      headers: {...sbHeaders, 'Prefer': 'return=minimal,resolution=merge-duplicates'},
+      body: JSON.stringify(data)
+    });
+  } catch(e) { console.error('Supabase error:', e); }
+}
+
 const SAVEURS = ['SUZZY','JACKY','BENNY','DAVY','MOLLY','WALLY','CHARLY','LENI','EMMY','WOODY','DANNY'];
 const CODE_MAP = {'SUZ':'SUZZY','JAC':'JACKY','BEN':'BENNY','DAV':'DAVY','MOL':'MOLLY','WAL':'WALLY','CHA':'CHARLY','LEN':'LENI','EMM':'EMMY','WOO':'WOODY','DAN':'DANNY'};
 const selectedInvoices = { premix: new Set(), production: new Set() };
@@ -977,7 +1001,7 @@ async function saveFactNum(code, value) {
   localStorage.setItem('factNum_'+code, value);
   if (value) {
     try {
-      await sendToSheets({ action: 'saveFactureVirginia', codeProduction: code, numeroFacture: value });
+      await sendToSheets({ action: 'saveFactureVirginia', codeProduction: code, numeroFacture: value }); await supabaseUpsert('factures_virginia', {code_production:code, numero_facture:value}, 'code_production');
     } catch(e) { console.error('Erreur sauvegarde facture:', e); }
   }
 }
