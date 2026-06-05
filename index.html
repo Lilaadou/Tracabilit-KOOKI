@@ -13,8 +13,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .header h1 { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
 .header p { font-size: 12px; opacity: 0.7; margin-top: 2px; }
 .tabs { display: flex; background: #0662aa; overflow-x: auto; }
-.tab { flex: 1; min-width: 55px; padding: 11px 4px; text-align: center; color: rgba(255,255,255,0.6); font-size: 10px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; }
+.tab { flex: 1; min-width: 50px; padding: 8px 4px; text-align: center; color: rgba(255,255,255,0.6); font-size: 9px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
 .tab.active { color: white; border-bottom-color: #d44218; background: rgba(255,255,255,0.15); }
+.tab-icon { font-size: 16px; line-height: 1; margin-bottom: 2px; }
+.tab-label { font-size: 9px; font-weight: 600; white-space: nowrap; }
 .content { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
 .content.active { display: block; }
 .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
@@ -159,14 +161,14 @@ tr:hover td { background: #faf8f5; }
   <p>Atelier de production</p>
 </div>
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('accueil')">🏠 ACCUEIL</div>
-  <div class="tab" onclick="switchTab('reception')">RÉCEPTION</div>
-  <div class="tab" onclick="switchTab('premix')">PREMIX</div>
-  <div class="tab" onclick="switchTab('production')">PRODUCTION</div>
-  <div class="tab" onclick="switchTab('sortie')">SORTIE FRIGO</div>
-  <div class="tab" onclick="switchTab('stock')">STOCK</div>
-  <div class="tab" onclick="switchTab('factures')">FACTURES</div>
-  <div class="tab" onclick="switchTab('manquants')">⚠️ MANQUANTS</div>
+  <div class="tab active" onclick="switchTab('accueil')"><div class="tab-icon">🏠</div><div class="tab-label">Accueil</div></div>
+  <div class="tab" onclick="switchTab('reception')"><div class="tab-icon">📥</div><div class="tab-label">Récept.</div></div>
+  <div class="tab" onclick="switchTab('premix')"><div class="tab-icon">🧁</div><div class="tab-label">Premix</div></div>
+  <div class="tab" onclick="switchTab('production')"><div class="tab-icon">🏭</div><div class="tab-label">Prod.</div></div>
+  <div class="tab" onclick="switchTab('sortie')"><div class="tab-icon">🧊</div><div class="tab-label">Frigo</div></div>
+  <div class="tab" onclick="switchTab('stock')"><div class="tab-icon">📦</div><div class="tab-label">Stock</div></div>
+  <div class="tab" onclick="switchTab('factures')"><div class="tab-icon">📋</div><div class="tab-label">Fact.</div></div>
+  <div class="tab" onclick="switchTab('manquants')"><div class="tab-icon">⚠️</div><div class="tab-label">Manq.</div></div>
 </div>
 
 <!-- ACCUEIL -->
