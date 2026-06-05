@@ -166,7 +166,6 @@ tr:hover td { background: #faf8f5; }
   <div class="tab" onclick="switchTab('sortie')">SORTIE FRIGO</div>
   <div class="tab" onclick="switchTab('stock')">STOCK</div>
   <div class="tab" onclick="switchTab('factures')">FACTURES</div>
-  <div class="tab" onclick="switchTab('historique')">HISTORIQUE</div>
   <div class="tab" onclick="switchTab('manquants')">⚠️ MANQUANTS</div>
 </div>
 
@@ -325,6 +324,18 @@ tr:hover td { background: #faf8f5; }
     <div class="error-msg" id="sortie-error"></div>
     <button class="btn" onclick="submitSortie()">Enregistrer la sortie</button>
   </div>
+  <div class="card">
+    <h2>📋 Sorties des 7 derniers jours</h2>
+    <button class="btn btn-secondary" onclick="loadHistorique()" style="margin-bottom:14px">🔄 Actualiser</button>
+    <div class="success-msg" id="historique-success"></div>
+    <div class="error-msg" id="historique-error"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Lot</th><th>Saveur</th><th>Destination</th><th>Big</th><th>Small</th><th>Produit par</th><th>Premix</th></tr></thead>
+        <tbody id="historique-tbody"><tr><td colspan="8" class="empty-state">Appuie sur Actualiser</td></tr></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- STOCK -->
@@ -368,22 +379,6 @@ tr:hover td { background: #faf8f5; }
   </div>
 </div>
 
-<!-- HISTORIQUE SORTIES -->
-<div id="tab-historique" class="content">
-  <div class="card">
-    <h2>📤 Historique des sorties</h2>
-    <button class="btn btn-secondary" onclick="loadHistorique()" style="margin-bottom:14px">🔄 Actualiser</button>
-    <div class="success-msg" id="historique-success"></div>
-    <div class="error-msg" id="historique-error"></div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Date</th><th>Lot</th><th>Saveur</th><th>Destination</th><th>Big</th><th>Small</th><th>Produit par</th><th>Premix</th></tr></thead>
-        <tbody id="historique-tbody"><tr><td colspan="8" class="empty-state">Appuie sur Actualiser</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
 <!-- MANQUANTS -->
 <div id="tab-manquants" class="content">
   <div class="card">
@@ -414,14 +409,14 @@ tr:hover td { background: #faf8f5; }
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMlytKdnSLOmBHRXP4KFsRGsW_3MgR4DJeZ2HRdZHExxOfWaYb29fF4WzRk2xLuInR/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz16R8wEwXLjE1P_94uZ7X8jWoADjWTXQ7h_5ZM_CmTDT_IVBA1x1kCub3DF7ERAelV/exec';
 const SAVEURS = ['SUZZY','JACKY','BENNY','DAVY','MOLLY','WALLY','CHARLY','LENI','EMMY','WOODY','DANNY'];
 const CODE_MAP = {'SUZ':'SUZZY','JAC':'JACKY','BEN':'BENNY','DAV':'DAVY','MOL':'MOLLY','WAL':'WALLY','CHA':'CHARLY','LEN':'LENI','EMM':'EMMY','WOO':'WOODY','DAN':'DANNY'};
 const selectedInvoices = { premix: new Set(), production: new Set() };
 let currentLots = [];
 
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['accueil','reception','premix','production','sortie','stock','factures','historique','manquants'][i]===name));
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['accueil','reception','premix','production','sortie','stock','factures','manquants'][i]===name));
   document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if(name==='premix'||name==='production') loadInvoicesForTab(name);
@@ -768,18 +763,18 @@ document.getElementById('dash-date').textContent = new Date().toLocaleDateString
 
 // ===== PROFILS =====
 const PROFILES = [
-  {name:'Lila',      initials:'L',  color:'#d44218', tabs:['accueil','reception','premix','production','sortie','stock','factures','historique','manquants']},
-  {name:'Virginia',  initials:'V',  color:'#0662aa', tabs:['accueil','reception','premix','production','sortie','stock','factures','historique','manquants']},
+  {name:'Lila',      initials:'L',  color:'#d44218', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
+  {name:'Virginia',  initials:'V',  color:'#0662aa', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
   {name:'Alexandre', initials:'A',  color:'#27ae60', tabs:['accueil','production','stock']},
-  {name:'David D',   initials:'DD', color:'#8e44ad', tabs:['accueil','reception','premix','production','sortie','stock','factures','historique','manquants']},
+  {name:'David D',   initials:'DD', color:'#8e44ad', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
   {name:'David C',   initials:'DC', color:'#16a085', tabs:['accueil','production','stock']},
-  {name:'Sebastien', initials:'S',  color:'#e67e22', tabs:['accueil','reception','premix','production','sortie','stock','factures','historique','manquants']},
-  {name:'Abenazer',  initials:'Ab', color:'#c0392b', tabs:['accueil','reception','premix','production','sortie','stock','factures','historique','manquants']},
+  {name:'Sebastien', initials:'S',  color:'#e67e22', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
+  {name:'Abenazer',  initials:'Ab', color:'#c0392b', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
   {name:'Noémie',    initials:'N',  color:'#2980b9', tabs:['accueil','sortie']},
   {name:'Délia',     initials:'Dé', color:'#d44218', tabs:['accueil','sortie']},
   {name:'Meg',       initials:'M',  color:'#0662aa', tabs:['accueil','premix','production','sortie','stock']},
 ];
-const ALL_TABS = ['accueil','reception','premix','production','sortie','stock','factures','historique','manquants'];
+const ALL_TABS = ['accueil','reception','premix','production','sortie','stock','factures','manquants'];
 let selectedProfile = null;
 
 function buildProfileGrid() {
@@ -825,7 +820,7 @@ function updateGreeting() {
 function applyTabPermissions(profileName) {
   const profile = PROFILES.find(p => p.name === profileName);
   const allowedTabs = profile ? profile.tabs : ALL_TABS;
-  const tabNames = ['accueil','reception','premix','production','sortie','stock','factures','historique','manquants'];
+  const tabNames = ['accueil','reception','premix','production','sortie','stock','factures','manquants'];
   document.querySelectorAll('.tab').forEach((tab, i) => {
     const tabName = tabNames[i];
     tab.style.display = allowedTabs.includes(tabName) ? '' : 'none';
