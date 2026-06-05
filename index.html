@@ -309,6 +309,39 @@ tr:hover td { background: #faf8f5; }
       <option>B2B</option>
       <option>Usage interne</option>
     </select>
+
+    <!-- Receveur Ixelles -->
+    <div id="receveur-ixelles-section" style="display:none;">
+      <label>Receveur au magasin</label>
+      <select id="receveur-ixelles">
+        <option value="Magasin Ixelles">Magasin Ixelles (sans présence)</option>
+        <option>Lila</option>
+        <option>Virginia</option>
+        <option>David D</option>
+        <option>Noémie</option>
+        <option>Délia</option>
+        <option>Meg</option>
+      </select>
+    </div>
+
+    <!-- Client B2B -->
+    <div id="client-b2b-section" style="display:none;">
+      <label>Client B2B</label>
+      <select id="client-b2b" onchange="showClientInfo()">
+        <option value="">— Choisir un client —</option>
+        <option value="Ecocyclo">Ecocyclo</option>
+        <option value="Galler Ixelles">Galler Ixelles</option>
+        <option value="Galler Woluwe">Galler Woluwe</option>
+        <option value="La Fourmilière">La Fourmilière</option>
+        <option value="Penta Hotel">Penta Hotel</option>
+        <option value="Café Club">Café Club</option>
+        <option value="Flippers">Flippers</option>
+        <option value="Slide Coffee">Slide Coffee</option>
+        <option value="Petit Mercado">Petit Mercado</option>
+      </select>
+      <div id="client-info" style="display:none;background:#f0f6ff;border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:13px;color:#0662aa;"></div>
+    </div>
+
     <label>② Saveur</label>
     <select id="sortie-saveur" onchange="loadLotsForSaveur()">
       <option value="">— Choisir une saveur —</option>
@@ -462,10 +495,37 @@ function updateSelectedCount(tab) {
 }
 
 // ===== SORTIE FRIGO =====
+const B2B_CLIENTS = {
+  'Ecocyclo': { adresse:'Chaussée de Waterloo 1126, 1180 Uccle', contact:'Felix BASILE', tel:'047 205 79 97' },
+  'Galler Ixelles': { adresse:'Avenue de l\'Université 9, 1050 Ixelles', contact:'Marie MAYNE', tel:'047 734 96 32' },
+  'Galler Woluwe': { adresse:'Rue de l\'Église 169, 1150 Woluwe-Saint-Pierre', contact:'Marie MAYNE', tel:'047 734 96 32' },
+  'La Fourmilière': { adresse:'Rue d\'Aumale 19C, 1070 Anderlecht', contact:'Robin CARDOEN', tel:'049 805 41 68' },
+  'Penta Hotel': { adresse:'Chaussée de Charleroi 38, 1060 Saint-Gilles', contact:'Menno DE RICHEMONT', tel:'047 010 12 48' },
+  'Café Club': { adresse:'Rue de l\'Aqueduc 109, 1050 Ixelles', contact:'Nicolas AUFFRAY', tel:'+32 484 69 44 25' },
+  'Flippers': { adresse:'Rue Lesbroussart 13, 1050 Ixelles', contact:'Basile STEIN', tel:'047 293 06 07' },
+  'Slide Coffee': { adresse:'Boulevard de la Deuxième Armée Britannique 3, 1190 Forest', contact:'Sebastien Kunnen', tel:'+32 489 39 65 16' },
+  'Petit Mercado': { adresse:'Rue de l\'Hôtel des Monnaies 82, 1060 Saint-Gilles', contact:'Pia & Meno', tel:'0487 30 09 69' },
+};
+
+function showClientInfo() {
+  const client = document.getElementById('client-b2b').value;
+  const infoEl = document.getElementById('client-info');
+  if (client && B2B_CLIENTS[client]) {
+    const c = B2B_CLIENTS[client];
+    infoEl.innerHTML = `📍 ${c.adresse}<br>👤 ${c.contact}<br>📞 ${c.tel}`;
+    infoEl.style.display = 'block';
+  } else {
+    infoEl.style.display = 'none';
+  }
+}
+
 function checkSortieDestination() {
   const dest=document.getElementById('sortie-destination').value;
   if(dest) document.getElementById('sortie-destination').classList.add('filled');
   else document.getElementById('sortie-destination').classList.remove('filled');
+  document.getElementById('receveur-ixelles-section').style.display = dest==='Magasin Ixelles' ? 'block' : 'none';
+  document.getElementById('client-b2b-section').style.display = dest==='B2B' ? 'block' : 'none';
+  document.getElementById('client-info').style.display = 'none';
 }
 
 async function loadLotsForSaveur() {
@@ -579,22 +639,122 @@ async function submitSortie(){
   const errEl=document.getElementById('sortie-error');errEl.classList.remove('show');document.getElementById('sortie-success').classList.remove('show');
   if(!dest){errEl.textContent="⚠️ Choisis une destination.";errEl.classList.add('show');return;}
   if(!saveur){errEl.textContent="⚠️ Choisis une saveur.";errEl.classList.add('show');return;}
+  if(dest==='B2B'&&!document.getElementById('client-b2b').value){errEl.textContent="⚠️ Choisis un client B2B.";errEl.classList.add('show');return;}
   const selectedLots=[];
   document.querySelectorAll('#sortie-lots-list .lot-item.selected').forEach(item=>{
     const code=item.querySelector('.lot-code').textContent;
     const big=parseInt(item.querySelector('.lot-big-input').value)||0;
     const small=parseInt(item.querySelector('.lot-small-input').value)||0;
-    if(big>0||small>0) selectedLots.push({code,big,small});
+    if(big>0||small>0) selectedLots.push({code,big,small,saveur});
   });
   if(!selectedLots.length){errEl.textContent="⚠️ Sélectionne au moins un lot avec une quantité.";errEl.classList.add('show');return;}
+  const receveur = dest==='Magasin Ixelles' ? document.getElementById('receveur-ixelles').value : (dest==='B2B' ? document.getElementById('client-b2b').value : '');
+  const livreur = localStorage.getItem('userProfile')||'';
   const btn=document.querySelector('#tab-sortie .btn');btn.disabled=true;btn.textContent='Envoi en cours...';
   try{
-    await sendToSheets({action:'sortie',destination:dest,saveur,lots:selectedLots,date:new Date().toISOString()});
+    await sendToSheets({action:'sortie',destination:dest,saveur,lots:selectedLots,receveur,livreur,date:new Date().toISOString()});
     document.getElementById('sortie-success').classList.add('show');
+    // Proposer le bon de livraison si Ixelles ou B2B
+    if(dest==='Magasin Ixelles'||dest==='B2B'){
+      setTimeout(()=>generateBonLivraison(dest, receveur, livreur, selectedLots, saveur), 500);
+    }
     document.getElementById('sortie-destination').value='';document.getElementById('sortie-saveur').value='';
     document.getElementById('sortie-lots-section').style.display='none';
+    document.getElementById('receveur-ixelles-section').style.display='none';
+    document.getElementById('client-b2b-section').style.display='none';
   }catch(e){errEl.textContent='❌ Erreur : '+e.message;errEl.classList.add('show');}
   btn.disabled=false;btn.textContent='Enregistrer la sortie';
+}
+
+function generateBonLivraison(dest, receveur, livreur, lots, saveur) {
+  const dateStr = new Date().toLocaleDateString('fr-BE',{day:'numeric',month:'long',year:'numeric'});
+  const totalBig = lots.reduce((s,l)=>s+l.big,0);
+  const totalSmall = lots.reduce((s,l)=>s+l.small,0);
+  const clientInfo = dest==='B2B' ? B2B_CLIENTS[receveur] : null;
+
+  const lotsHtml = lots.map(lot=>`
+    <div style="border:1px solid #e8e0d8;border-radius:6px;padding:8px 12px;margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:12px;font-weight:700;">${lot.code}</span>
+        <span style="font-size:10px;background:#f0f6ff;color:#0662aa;padding:2px 7px;border-radius:3px;font-weight:600;">${lot.saveur||saveur}</span>
+      </div>
+      <div style="font-size:11px;color:#555;">${lot.big} big · ${lot.small} small</div>
+    </div>`).join('');
+
+  const receveurHtml = clientInfo ?
+    `<div style="border:1.5px solid #0662aa;border-radius:6px;padding:10px;">
+      <div style="font-size:8px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px;">🏢 Client B2B</div>
+      <div style="font-size:13px;font-weight:700;color:#333;">${receveur}</div>
+      <div style="font-size:10px;color:#555;margin-top:3px;">📍 ${clientInfo.adresse}</div>
+      <div style="font-size:10px;color:#555;">👤 ${clientInfo.contact} · 📞 ${clientInfo.tel}</div>
+    </div>` :
+    `<div style="border:1px solid #e8e0d8;border-radius:6px;padding:10px;">
+      <div style="font-size:8px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px;">📬 Receveur</div>
+      <div style="font-size:13px;font-weight:700;color:#333;">${receveur}</div>
+      <div style="font-size:10px;color:#888;">Magasin Ixelles</div>
+    </div>`;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Bon de livraison — ${dest}</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;padding:20px;background:white;}
+    .header{background:#d44218;color:white;padding:20px 24px;border-radius:6px 6px 0 0;}
+    .logo{font-size:20px;font-weight:700;}
+    .subtitle{font-size:11px;opacity:0.8;margin-top:2px;}
+    .title-badge{font-size:13px;font-weight:700;margin-top:10px;background:rgba(255,255,255,0.15);padding:5px 10px;border-radius:4px;display:inline-block;}
+    .body{border:1px solid #eee;border-top:none;padding:20px 24px;border-radius:0 0 6px 6px;}
+    .section-title{font-size:9px;font-weight:700;color:#d44218;text-transform:uppercase;letter-spacing:0.8px;border-bottom:1.5px solid #d44218;padding-bottom:3px;margin:14px 0 8px;}
+    .parties{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+    .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+    .stat-box{background:#f5f5f5;border-radius:4px;padding:8px;text-align:center;}
+    .stat-num{font-size:20px;font-weight:700;color:#d44218;}
+    .stat-label{font-size:9px;color:#888;}
+    .sign-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+    .sign-box{border:1px solid #ccc;border-radius:4px;padding:10px;text-align:center;font-size:9px;color:#888;}
+    .sign-line{border-bottom:1px solid #ccc;margin:18px 8px 4px;}
+    .footer{background:#f5f5f5;padding:10px 24px;display:flex;justify-content:space-between;font-size:8px;color:#aaa;border-top:1px solid #eee;margin-top:16px;border-radius:4px;}
+    @media print{body{padding:0;}.no-print{display:none!important;}}
+  </style></head><body>
+  <div class="no-print" style="margin-bottom:16px;"><button onclick="window.print()" style="padding:10px 20px;background:#d44218;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Imprimer / Télécharger PDF</button></div>
+  <div class="header">
+    <div class="logo">🍪 KOOKI</div>
+    <div class="subtitle">Bon de livraison</div>
+    <div class="title-badge">📦 ${dest} — ${dateStr}</div>
+  </div>
+  <div class="body">
+    <div class="section-title">Parties</div>
+    <div class="parties">
+      <div style="border:1px solid #e8e0d8;border-radius:6px;padding:10px;">
+        <div style="font-size:8px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px;">🚚 Livreur</div>
+        <div style="font-size:13px;font-weight:700;color:#333;">${livreur||'—'}</div>
+        <div style="font-size:10px;color:#888;">Atelier KOOKI</div>
+      </div>
+      ${receveurHtml}
+    </div>
+    <div class="section-title">Résumé</div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num">${totalBig}</div><div class="stat-label">Big cookies (165g)</div></div>
+      <div class="stat-box"><div class="stat-num">${totalSmall}</div><div class="stat-label">Small cookies (80g)</div></div>
+    </div>
+    <div class="section-title">Lots livrés</div>
+    ${lotsHtml}
+    <div class="sign-grid">
+      <div class="sign-box">Livreur<div class="sign-line"></div>${livreur||'____________'}</div>
+      <div class="sign-box">Receveur<div class="sign-line"></div>${dest==='B2B'?'____________':receveur}</div>
+    </div>
+    <div class="footer">
+      <div>Généré le ${dateStr} · KOOKI Atelier · Traçabilité complète</div>
+    </div>
+  </div>
+  </body></html>`;
+
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bon-livraison-${dest.replace(/ /g,'-')}-${new Date().toISOString().slice(0,10)}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ===== STOCK =====
