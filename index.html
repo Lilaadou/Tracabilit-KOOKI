@@ -315,12 +315,12 @@ tr:hover td { background: #faf8f5; }
       <label>Receveur au magasin</label>
       <select id="receveur-ixelles">
         <option value="Magasin Ixelles">Magasin Ixelles (sans présence)</option>
-        <option>Lila</option>
-        <option>Virginia</option>
-        <option>David D</option>
-        <option>Noémie</option>
-        <option>Délia</option>
-        <option>Meg</option>
+        <option>DOUDOU Lila</option>
+        <option>KUNNEN Virginia</option>
+        <option>DERIDDER David</option>
+        <option>LAMBIOTTE Noémie</option>
+        <option>RUETTNER Délia</option>
+        <option>DOLLINGER Meg</option>
       </select>
     </div>
 
@@ -342,17 +342,38 @@ tr:hover td { background: #faf8f5; }
       <div id="client-info" style="display:none;background:#f0f6ff;border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:13px;color:#0662aa;"></div>
     </div>
 
-    <label>② Saveur</label>
-    <select id="sortie-saveur" onchange="loadLotsForSaveur()">
-      <option value="">— Choisir une saveur —</option>
-      <option>SUZZY</option><option>JACKY</option><option>BENNY</option><option>DAVY</option>
-      <option>MOLLY</option><option>WALLY</option><option>CHARLY</option><option>LENI</option>
-      <option>EMMY</option><option>WOODY</option><option>DANNY</option>
-    </select>
-    <div id="sortie-lots-section" style="display:none;">
-      <label>③ Lots disponibles — coche et saisis les quantités</label>
-      <div id="sortie-lots-list"></div>
+    <!-- Saveur unique (non-Ixelles) -->
+    <div id="sortie-saveur-section">
+      <label>② Saveur</label>
+      <select id="sortie-saveur" onchange="loadLotsForSaveur()">
+        <option value="">— Choisir une saveur —</option>
+        <option>SUZZY</option><option>JACKY</option><option>BENNY</option><option>DAVY</option>
+        <option>MOLLY</option><option>WALLY</option><option>CHARLY</option><option>LENI</option>
+        <option>EMMY</option><option>WOODY</option><option>DANNY</option>
+      </select>
+      <div id="sortie-lots-section" style="display:none;">
+        <label>③ Lots disponibles — coche et saisis les quantités</label>
+        <div id="sortie-lots-list"></div>
+      </div>
     </div>
+
+    <!-- Multi-saveurs pour Ixelles -->
+    <div id="sortie-ixelles-section" style="display:none;">
+      <label>② Saveurs à livrer</label>
+      <div id="ixelles-saveurs-added" style="margin-bottom:10px;"></div>
+      <select id="ixelles-saveur-select">
+        <option value="">— Ajouter une saveur —</option>
+        <option>SUZZY</option><option>JACKY</option><option>BENNY</option><option>DAVY</option>
+        <option>MOLLY</option><option>WALLY</option><option>CHARLY</option><option>LENI</option>
+        <option>EMMY</option><option>WOODY</option><option>DANNY</option>
+      </select>
+      <div id="ixelles-lots-section" style="display:none;margin-bottom:10px;">
+        <label style="font-size:11px;text-transform:none;letter-spacing:0;color:#0662aa;font-weight:600;">Lots disponibles :</label>
+        <div id="ixelles-lots-list"></div>
+        <button class="btn btn-secondary" style="padding:10px;font-size:13px;" onclick="addSaveurToIxelles()">+ Ajouter cette saveur</button>
+      </div>
+    </div>
+
     <div class="success-msg" id="sortie-success">✅ Sortie enregistrée !</div>
     <div class="error-msg" id="sortie-error"></div>
     <button class="btn" onclick="submitSortie()">Enregistrer la sortie</button>
@@ -519,6 +540,8 @@ function showClientInfo() {
   }
 }
 
+let ixellesLots = []; // accumulation des lots Ixelles multi-saveurs
+
 function checkSortieDestination() {
   const dest=document.getElementById('sortie-destination').value;
   if(dest) document.getElementById('sortie-destination').classList.add('filled');
@@ -526,6 +549,83 @@ function checkSortieDestination() {
   document.getElementById('receveur-ixelles-section').style.display = dest==='Magasin Ixelles' ? 'block' : 'none';
   document.getElementById('client-b2b-section').style.display = dest==='B2B' ? 'block' : 'none';
   document.getElementById('client-info').style.display = 'none';
+  // Ixelles = multi-saveurs, autres = saveur unique
+  document.getElementById('sortie-ixelles-section').style.display = dest==='Magasin Ixelles' ? 'block' : 'none';
+  document.getElementById('sortie-saveur-section').style.display = dest==='Magasin Ixelles' ? 'none' : 'block';
+  // Reset Ixelles
+  ixellesLots = [];
+  document.getElementById('ixelles-saveurs-added').innerHTML = '';
+  document.getElementById('ixelles-saveur-select').value = '';
+  document.getElementById('ixelles-lots-section').style.display = 'none';
+  // Watcher pour le select Ixelles
+  document.getElementById('ixelles-saveur-select').onchange = async function() {
+    const saveur = this.value;
+    if (!saveur) { document.getElementById('ixelles-lots-section').style.display='none'; return; }
+    document.getElementById('ixelles-lots-section').style.display = 'block';
+    const listEl = document.getElementById('ixelles-lots-list');
+    listEl.innerHTML = '<div class="hint">Chargement...</div>';
+    try {
+      const res = await fetch(SCRIPT_URL+'?action=getLotsBySaveur&saveur='+encodeURIComponent(saveur));
+      const data = await res.json();
+      renderIxellesLots(data, saveur);
+    } catch(e) { listEl.innerHTML = '<div class="hint">❌ Impossible de charger</div>'; }
+  };
+}
+
+function renderIxellesLots(lots, saveur) {
+  const listEl = document.getElementById('ixelles-lots-list');
+  const available = lots.filter(l=>l.big>0||l.small>0);
+  if (!available.length) { listEl.innerHTML = '<div class="hint">Aucun lot disponible</div>'; return; }
+  listEl.innerHTML = '';
+  available.forEach(lot => {
+    const div = document.createElement('div'); div.className = 'lot-item';
+    div.innerHTML = `
+      <div class="lot-top">
+        <div class="lot-check"><span class="lot-check-icon" style="display:none;">✓</span></div>
+        <div><div class="lot-code">${lot.code}</div><div class="lot-stock">Stock : ${lot.big} big · ${lot.small} small</div></div>
+      </div>
+      <div class="lot-qty-section">
+        <div class="row2" style="margin-top:0;">
+          <div><label style="font-size:11px;text-transform:none;letter-spacing:0;">Big sortis (max ${lot.big})</label><input type="number" class="lot-big-input" placeholder="0" min="0" max="${lot.big}" style="margin-bottom:0;"></div>
+          <div><label style="font-size:11px;text-transform:none;letter-spacing:0;">Small sortis (max ${lot.small})</label><input type="number" class="lot-small-input" placeholder="0" min="0" max="${lot.small}" style="margin-bottom:0;"></div>
+        </div>
+      </div>`;
+    div.querySelector('.lot-top').onclick = () => {
+      div.classList.toggle('selected');
+      div.querySelector('.lot-check-icon').style.display = div.classList.contains('selected') ? 'block' : 'none';
+    };
+    div.dataset.saveur = saveur;
+    listEl.appendChild(div);
+  });
+}
+
+function addSaveurToIxelles() {
+  const saveur = document.getElementById('ixelles-saveur-select').value;
+  const selectedItems = document.querySelectorAll('#ixelles-lots-list .lot-item.selected');
+  if (!selectedItems.length) { alert('Sélectionne au moins un lot !'); return; }
+  selectedItems.forEach(item => {
+    const code = item.querySelector('.lot-code').textContent;
+    const big = parseInt(item.querySelector('.lot-big-input').value)||0;
+    const small = parseInt(item.querySelector('.lot-small-input').value)||0;
+    if (big>0||small>0) ixellesLots.push({code, big, small, saveur});
+  });
+  renderIxellesAdded();
+  document.getElementById('ixelles-saveur-select').value = '';
+  document.getElementById('ixelles-lots-section').style.display = 'none';
+  document.getElementById('ixelles-lots-list').innerHTML = '';
+}
+
+function renderIxellesAdded() {
+  const el = document.getElementById('ixelles-saveurs-added');
+  if (!ixellesLots.length) { el.innerHTML = ''; return; }
+  const bySaveur = {};
+  ixellesLots.forEach(l => { if(!bySaveur[l.saveur]) bySaveur[l.saveur]=[]; bySaveur[l.saveur].push(l); });
+  el.innerHTML = Object.entries(bySaveur).map(([saveur, lots]) =>
+    `<div style="background:#f0f6ff;border-radius:8px;padding:10px 12px;margin-bottom:6px;">
+      <div style="font-size:13px;font-weight:700;color:#0662aa;margin-bottom:4px;">🍪 ${saveur}</div>
+      ${lots.map(l=>`<div style="font-size:12px;color:#333;">${l.code} — ${l.big} big · ${l.small} small</div>`).join('')}
+    </div>`
+  ).join('') + `<div style="font-size:12px;color:#888;margin-top:4px;">Ajoute d'autres saveurs ou enregistre la sortie ↓</div>`;
 }
 
 async function loadLotsForSaveur() {
@@ -635,33 +735,50 @@ async function submitProduction(){
 }
 
 async function submitSortie(){
-  const dest=document.getElementById('sortie-destination').value;const saveur=document.getElementById('sortie-saveur').value;
+  const dest=document.getElementById('sortie-destination').value;
   const errEl=document.getElementById('sortie-error');errEl.classList.remove('show');document.getElementById('sortie-success').classList.remove('show');
   if(!dest){errEl.textContent="⚠️ Choisis une destination.";errEl.classList.add('show');return;}
-  if(!saveur){errEl.textContent="⚠️ Choisis une saveur.";errEl.classList.add('show');return;}
   if(dest==='B2B'&&!document.getElementById('client-b2b').value){errEl.textContent="⚠️ Choisis un client B2B.";errEl.classList.add('show');return;}
-  const selectedLots=[];
-  document.querySelectorAll('#sortie-lots-list .lot-item.selected').forEach(item=>{
-    const code=item.querySelector('.lot-code').textContent;
-    const big=parseInt(item.querySelector('.lot-big-input').value)||0;
-    const small=parseInt(item.querySelector('.lot-small-input').value)||0;
-    if(big>0||small>0) selectedLots.push({code,big,small,saveur});
-  });
-  if(!selectedLots.length){errEl.textContent="⚠️ Sélectionne au moins un lot avec une quantité.";errEl.classList.add('show');return;}
+
+  let selectedLots = [];
+  let saveur = '';
+
+  if(dest==='Magasin Ixelles'){
+    // Multi-saveurs
+    if(!ixellesLots.length){errEl.textContent="⚠️ Ajoute au moins une saveur avec des lots.";errEl.classList.add('show');return;}
+    selectedLots = ixellesLots;
+    saveur = [...new Set(ixellesLots.map(l=>l.saveur))].join(', ');
+  } else {
+    saveur = document.getElementById('sortie-saveur').value;
+    if(!saveur){errEl.textContent="⚠️ Choisis une saveur.";errEl.classList.add('show');return;}
+    document.querySelectorAll('#sortie-lots-list .lot-item.selected').forEach(item=>{
+      const code=item.querySelector('.lot-code').textContent;
+      const big=parseInt(item.querySelector('.lot-big-input').value)||0;
+      const small=parseInt(item.querySelector('.lot-small-input').value)||0;
+      if(big>0||small>0) selectedLots.push({code,big,small,saveur});
+    });
+    if(!selectedLots.length){errEl.textContent="⚠️ Sélectionne au moins un lot avec une quantité.";errEl.classList.add('show');return;}
+  }
+
   const receveur = dest==='Magasin Ixelles' ? document.getElementById('receveur-ixelles').value : (dest==='B2B' ? document.getElementById('client-b2b').value : '');
   const livreur = localStorage.getItem('userProfile')||'';
   const btn=document.querySelector('#tab-sortie .btn');btn.disabled=true;btn.textContent='Envoi en cours...';
   try{
     await sendToSheets({action:'sortie',destination:dest,saveur,lots:selectedLots,receveur,livreur,date:new Date().toISOString()});
     document.getElementById('sortie-success').classList.add('show');
-    // Proposer le bon de livraison si Ixelles ou B2B
     if(dest==='Magasin Ixelles'||dest==='B2B'){
       setTimeout(()=>generateBonLivraison(dest, receveur, livreur, selectedLots, saveur), 500);
     }
-    document.getElementById('sortie-destination').value='';document.getElementById('sortie-saveur').value='';
+    // Reset
+    document.getElementById('sortie-destination').value='';
+    document.getElementById('sortie-saveur').value='';
     document.getElementById('sortie-lots-section').style.display='none';
+    document.getElementById('sortie-ixelles-section').style.display='none';
+    document.getElementById('sortie-saveur-section').style.display='block';
     document.getElementById('receveur-ixelles-section').style.display='none';
     document.getElementById('client-b2b-section').style.display='none';
+    ixellesLots=[];
+    document.getElementById('ixelles-saveurs-added').innerHTML='';
   }catch(e){errEl.textContent='❌ Erreur : '+e.message;errEl.classList.add('show');}
   btn.disabled=false;btn.textContent='Enregistrer la sortie';
 }
@@ -681,18 +798,20 @@ function generateBonLivraison(dest, receveur, livreur, lots, saveur) {
       <div style="font-size:11px;color:#555;">${lot.big} big · ${lot.small} small</div>
     </div>`).join('');
 
-  const receveurHtml = clientInfo ?
-    `<div style="border:1.5px solid #0662aa;border-radius:6px;padding:10px;">
-      <div style="font-size:8px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px;">🏢 Client B2B</div>
-      <div style="font-size:13px;font-weight:700;color:#333;">${receveur}</div>
-      <div style="font-size:10px;color:#555;margin-top:3px;">📍 ${clientInfo.adresse}</div>
-      <div style="font-size:10px;color:#555;">👤 ${clientInfo.contact} · 📞 ${clientInfo.tel}</div>
-    </div>` :
+  const receveurHtml = clientInfo ? '' :
     `<div style="border:1px solid #e8e0d8;border-radius:6px;padding:10px;">
       <div style="font-size:8px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px;">📬 Receveur</div>
       <div style="font-size:13px;font-weight:700;color:#333;">${receveur}</div>
       <div style="font-size:10px;color:#888;">Magasin Ixelles</div>
     </div>`;
+
+  const clientHtml = clientInfo ? `
+    <div class="section-title">Client</div>
+    <div style="border:1.5px solid #0662aa;border-radius:6px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:15px;font-weight:700;color:#333;margin-bottom:6px;">${receveur}</div>
+      <div style="font-size:11px;color:#555;">📍 ${clientInfo.adresse}</div>
+      <div style="font-size:11px;color:#555;margin-top:3px;">👤 ${clientInfo.contact} &nbsp;·&nbsp; 📞 ${clientInfo.tel}</div>
+    </div>` : '';
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>Bon de livraison — ${dest}</title>
@@ -722,7 +841,8 @@ function generateBonLivraison(dest, receveur, livreur, lots, saveur) {
     <div class="title-badge">📦 ${dest} — ${dateStr}</div>
   </div>
   <div class="body">
-    <div class="section-title">Parties</div>
+    ${clientHtml}
+    ${!clientInfo ? `<div class="section-title">Parties</div>
     <div class="parties">
       <div style="border:1px solid #e8e0d8;border-radius:6px;padding:10px;">
         <div style="font-size:8px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px;">🚚 Livreur</div>
@@ -730,7 +850,7 @@ function generateBonLivraison(dest, receveur, livreur, lots, saveur) {
         <div style="font-size:10px;color:#888;">Atelier KOOKI</div>
       </div>
       ${receveurHtml}
-    </div>
+    </div>` : ''}
     <div class="section-title">Résumé</div>
     <div class="stat-grid">
       <div class="stat-box"><div class="stat-num">${totalBig}</div><div class="stat-label">Big cookies (165g)</div></div>
@@ -738,10 +858,10 @@ function generateBonLivraison(dest, receveur, livreur, lots, saveur) {
     </div>
     <div class="section-title">Lots livrés</div>
     ${lotsHtml}
-    <div class="sign-grid">
+    ${!clientInfo ? `<div class="sign-grid">
       <div class="sign-box">Livreur<div class="sign-line"></div>${livreur||'____________'}</div>
-      <div class="sign-box">Receveur<div class="sign-line"></div>${dest==='B2B'?'____________':receveur}</div>
-    </div>
+      <div class="sign-box">Receveur<div class="sign-line"></div>${receveur}</div>
+    </div>` : ''}
     <div class="footer">
       <div>Généré le ${dateStr} · KOOKI Atelier · Traçabilité complète</div>
     </div>
@@ -923,16 +1043,16 @@ document.getElementById('dash-date').textContent = new Date().toLocaleDateString
 
 // ===== PROFILS =====
 const PROFILES = [
-  {name:'Lila',      initials:'L',  color:'#d44218', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
-  {name:'Virginia',  initials:'V',  color:'#0662aa', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
-  {name:'Alexandre', initials:'A',  color:'#27ae60', tabs:['accueil','production','stock']},
-  {name:'David D',   initials:'DD', color:'#8e44ad', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
-  {name:'David C',   initials:'DC', color:'#16a085', tabs:['accueil','production','stock']},
-  {name:'Sebastien', initials:'S',  color:'#e67e22', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
-  {name:'Abenazer',  initials:'Ab', color:'#c0392b', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
-  {name:'Noémie',    initials:'N',  color:'#2980b9', tabs:['accueil','sortie']},
-  {name:'Délia',     initials:'Dé', color:'#d44218', tabs:['accueil','sortie']},
-  {name:'Meg',       initials:'M',  color:'#0662aa', tabs:['accueil','premix','production','sortie','stock']},
+  {name:'DOUDOU Lila',       initials:'DL',  color:'#d44218', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
+  {name:'KUNNEN Virginia',   initials:'KV',  color:'#0662aa', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
+  {name:'MICHEL Alexandre',  initials:'MA',  color:'#27ae60', tabs:['accueil','production','stock']},
+  {name:'DERIDDER David',    initials:'DD',  color:'#8e44ad', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
+  {name:'COHENCA David',     initials:'CD',  color:'#16a085', tabs:['accueil','production','stock']},
+  {name:'KUNNEN Sebastien',  initials:'KS',  color:'#e67e22', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
+  {name:'HAILU Abenazer',    initials:'HA',  color:'#c0392b', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
+  {name:'LAMBIOTTE Noémie',  initials:'LN',  color:'#2980b9', tabs:['accueil','sortie']},
+  {name:'RUETTNER Délia',    initials:'RD',  color:'#d44218', tabs:['accueil','sortie']},
+  {name:'DOLLINGER Meg',     initials:'DM',  color:'#0662aa', tabs:['accueil','premix','production','sortie','stock']},
 ];
 const ALL_TABS = ['accueil','reception','premix','production','sortie','stock','factures','manquants'];
 let selectedProfile = null;
