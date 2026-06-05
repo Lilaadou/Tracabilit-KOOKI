@@ -344,35 +344,20 @@ tr:hover td { background: #faf8f5; }
       <div id="client-info" style="display:none;background:#f0f6ff;border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:13px;color:#0662aa;"></div>
     </div>
 
-    <!-- Saveur unique (non-Ixelles) -->
-    <div id="sortie-saveur-section">
-      <label>② Saveur</label>
-      <select id="sortie-saveur" onchange="loadLotsForSaveur()">
-        <option value="">— Choisir une saveur —</option>
-        <option>SUZZY</option><option>JACKY</option><option>BENNY</option><option>DAVY</option>
-        <option>MOLLY</option><option>WALLY</option><option>CHARLY</option><option>LENI</option>
-        <option>EMMY</option><option>WOODY</option><option>DANNY</option>
-      </select>
-      <div id="sortie-lots-section" style="display:none;">
-        <label>③ Lots disponibles — coche et saisis les quantités</label>
-        <div id="sortie-lots-list"></div>
-      </div>
-    </div>
-
-    <!-- Multi-saveurs pour Ixelles -->
-    <div id="sortie-ixelles-section" style="display:none;">
+    <!-- Multi-saveurs pour toutes destinations -->
+    <div id="sortie-saveurs-section" style="display:none;">
       <label>② Saveurs à livrer</label>
-      <div id="ixelles-saveurs-added" style="margin-bottom:10px;"></div>
-      <select id="ixelles-saveur-select">
+      <div id="saveurs-added" style="margin-bottom:10px;"></div>
+      <select id="sortie-saveur-select" onchange="loadLotsForSaveurMulti()">
         <option value="">— Ajouter une saveur —</option>
         <option>SUZZY</option><option>JACKY</option><option>BENNY</option><option>DAVY</option>
         <option>MOLLY</option><option>WALLY</option><option>CHARLY</option><option>LENI</option>
         <option>EMMY</option><option>WOODY</option><option>DANNY</option>
       </select>
-      <div id="ixelles-lots-section" style="display:none;margin-bottom:10px;">
+      <div id="sortie-lots-section" style="display:none;margin-bottom:10px;">
         <label style="font-size:11px;text-transform:none;letter-spacing:0;color:#0662aa;font-weight:600;">Lots disponibles :</label>
-        <div id="ixelles-lots-list"></div>
-        <button class="btn btn-secondary" style="padding:10px;font-size:13px;" onclick="addSaveurToIxelles()">+ Ajouter cette saveur</button>
+        <div id="sortie-lots-list"></div>
+        <button class="btn btn-secondary" style="padding:10px;font-size:13px;margin-top:6px;" onclick="addSaveurToList()">+ Ajouter cette saveur</button>
       </div>
     </div>
 
@@ -542,42 +527,42 @@ function showClientInfo() {
   }
 }
 
-let ixellesLots = []; // accumulation des lots Ixelles multi-saveurs
+let sortieLots = []; // accumulation des lots multi-saveurs
 
 function checkSortieDestination() {
-  const dest=document.getElementById('sortie-destination').value;
+  const dest = document.getElementById('sortie-destination').value;
   if(dest) document.getElementById('sortie-destination').classList.add('filled');
   else document.getElementById('sortie-destination').classList.remove('filled');
   document.getElementById('receveur-ixelles-section').style.display = dest==='Magasin Ixelles' ? 'block' : 'none';
   document.getElementById('client-b2b-section').style.display = dest==='B2B' ? 'block' : 'none';
   document.getElementById('client-info').style.display = 'none';
-  // Ixelles = multi-saveurs, autres = saveur unique
-  document.getElementById('sortie-ixelles-section').style.display = dest==='Magasin Ixelles' ? 'block' : 'none';
-  document.getElementById('sortie-saveur-section').style.display = dest==='Magasin Ixelles' ? 'none' : 'block';
-  // Reset Ixelles
-  ixellesLots = [];
-  document.getElementById('ixelles-saveurs-added').innerHTML = '';
-  document.getElementById('ixelles-saveur-select').value = '';
-  document.getElementById('ixelles-lots-section').style.display = 'none';
-  // Watcher pour le select Ixelles
-  document.getElementById('ixelles-saveur-select').onchange = async function() {
-    const saveur = this.value;
-    if (!saveur) { document.getElementById('ixelles-lots-section').style.display='none'; return; }
-    document.getElementById('ixelles-lots-section').style.display = 'block';
-    const listEl = document.getElementById('ixelles-lots-list');
-    listEl.innerHTML = '<div class="hint">Chargement...</div>';
-    try {
-      const res = await fetch(SCRIPT_URL+'?action=getLotsBySaveur&saveur='+encodeURIComponent(saveur));
-      const data = await res.json();
-      renderIxellesLots(data, saveur);
-    } catch(e) { listEl.innerHTML = '<div class="hint">❌ Impossible de charger</div>'; }
-  };
+  document.getElementById('sortie-saveurs-section').style.display = dest ? 'block' : 'none';
+  // Reset
+  sortieLots = [];
+  document.getElementById('saveurs-added').innerHTML = '';
+  document.getElementById('sortie-saveur-select').value = '';
+  document.getElementById('sortie-lots-section').style.display = 'none';
+  document.getElementById('sortie-lots-list').innerHTML = '';
 }
 
-function renderIxellesLots(lots, saveur) {
-  const listEl = document.getElementById('ixelles-lots-list');
+async function loadLotsForSaveurMulti() {
+  const saveur = document.getElementById('sortie-saveur-select').value;
+  const section = document.getElementById('sortie-lots-section');
+  const listEl = document.getElementById('sortie-lots-list');
+  if (!saveur) { section.style.display='none'; return; }
+  section.style.display = 'block';
+  listEl.innerHTML = '<div class="hint">Chargement...</div>';
+  try {
+    const res = await fetch(SCRIPT_URL+'?action=getLotsBySaveur&saveur='+encodeURIComponent(saveur));
+    const data = await res.json();
+    renderLotsMulti(data, saveur);
+  } catch(e) { listEl.innerHTML = '<div class="hint">❌ Impossible de charger</div>'; }
+}
+
+function renderLotsMulti(lots, saveur) {
+  const listEl = document.getElementById('sortie-lots-list');
   const available = lots.filter(l=>l.big>0||l.small>0);
-  if (!available.length) { listEl.innerHTML = '<div class="hint">Aucun lot disponible</div>'; return; }
+  if (!available.length) { listEl.innerHTML = '<div class="hint">Aucun lot de cette saveur en stock</div>'; return; }
   listEl.innerHTML = '';
   available.forEach(lot => {
     const div = document.createElement('div'); div.className = 'lot-item';
@@ -596,38 +581,37 @@ function renderIxellesLots(lots, saveur) {
       div.classList.toggle('selected');
       div.querySelector('.lot-check-icon').style.display = div.classList.contains('selected') ? 'block' : 'none';
     };
-    div.dataset.saveur = saveur;
     listEl.appendChild(div);
   });
 }
 
-function addSaveurToIxelles() {
-  const saveur = document.getElementById('ixelles-saveur-select').value;
-  const selectedItems = document.querySelectorAll('#ixelles-lots-list .lot-item.selected');
+function addSaveurToList() {
+  const saveur = document.getElementById('sortie-saveur-select').value;
+  const selectedItems = document.querySelectorAll('#sortie-lots-list .lot-item.selected');
   if (!selectedItems.length) { alert('Sélectionne au moins un lot !'); return; }
   selectedItems.forEach(item => {
     const code = item.querySelector('.lot-code').textContent;
     const big = parseInt(item.querySelector('.lot-big-input').value)||0;
     const small = parseInt(item.querySelector('.lot-small-input').value)||0;
-    if (big>0||small>0) ixellesLots.push({code, big, small, saveur});
+    if (big>0||small>0) sortieLots.push({code, big, small, saveur});
   });
-  renderIxellesAdded();
-  document.getElementById('ixelles-saveur-select').value = '';
-  document.getElementById('ixelles-lots-section').style.display = 'none';
-  document.getElementById('ixelles-lots-list').innerHTML = '';
+  renderSaveursAdded();
+  document.getElementById('sortie-saveur-select').value = '';
+  document.getElementById('sortie-lots-section').style.display = 'none';
+  document.getElementById('sortie-lots-list').innerHTML = '';
 }
 
-function renderIxellesAdded() {
-  const el = document.getElementById('ixelles-saveurs-added');
-  if (!ixellesLots.length) { el.innerHTML = ''; return; }
+function renderSaveursAdded() {
+  const el = document.getElementById('saveurs-added');
+  if (!sortieLots.length) { el.innerHTML = ''; return; }
   const bySaveur = {};
-  ixellesLots.forEach(l => { if(!bySaveur[l.saveur]) bySaveur[l.saveur]=[]; bySaveur[l.saveur].push(l); });
+  sortieLots.forEach(l => { if(!bySaveur[l.saveur]) bySaveur[l.saveur]=[]; bySaveur[l.saveur].push(l); });
   el.innerHTML = Object.entries(bySaveur).map(([saveur, lots]) =>
     `<div style="background:#f0f6ff;border-radius:8px;padding:10px 12px;margin-bottom:6px;">
       <div style="font-size:13px;font-weight:700;color:#0662aa;margin-bottom:4px;">🍪 ${saveur}</div>
       ${lots.map(l=>`<div style="font-size:12px;color:#333;">${l.code} — ${l.big} big · ${l.small} small</div>`).join('')}
     </div>`
-  ).join('') + `<div style="font-size:12px;color:#888;margin-top:4px;">Ajoute d'autres saveurs ou enregistre la sortie ↓</div>`;
+  ).join('') + `<div style="font-size:12px;color:#888;margin-top:4px;">↑ Ajoute d'autres saveurs ou enregistre ↓</div>`;
 }
 
 async function loadLotsForSaveur() {
@@ -742,25 +726,9 @@ async function submitSortie(){
   if(!dest){errEl.textContent="⚠️ Choisis une destination.";errEl.classList.add('show');return;}
   if(dest==='B2B'&&!document.getElementById('client-b2b').value){errEl.textContent="⚠️ Choisis un client B2B.";errEl.classList.add('show');return;}
 
-  let selectedLots = [];
-  let saveur = '';
-
-  if(dest==='Magasin Ixelles'){
-    // Multi-saveurs
-    if(!ixellesLots.length){errEl.textContent="⚠️ Ajoute au moins une saveur avec des lots.";errEl.classList.add('show');return;}
-    selectedLots = ixellesLots;
-    saveur = [...new Set(ixellesLots.map(l=>l.saveur))].join(', ');
-  } else {
-    saveur = document.getElementById('sortie-saveur').value;
-    if(!saveur){errEl.textContent="⚠️ Choisis une saveur.";errEl.classList.add('show');return;}
-    document.querySelectorAll('#sortie-lots-list .lot-item.selected').forEach(item=>{
-      const code=item.querySelector('.lot-code').textContent;
-      const big=parseInt(item.querySelector('.lot-big-input').value)||0;
-      const small=parseInt(item.querySelector('.lot-small-input').value)||0;
-      if(big>0||small>0) selectedLots.push({code,big,small,saveur});
-    });
-    if(!selectedLots.length){errEl.textContent="⚠️ Sélectionne au moins un lot avec une quantité.";errEl.classList.add('show');return;}
-  }
+  if(!sortieLots.length){errEl.textContent="⚠️ Ajoute au moins une saveur avec des lots.";errEl.classList.add('show');return;}
+  const selectedLots = sortieLots;
+  const saveur = [...new Set(sortieLots.map(l=>l.saveur))].join(', ');
 
   const receveur = dest==='Magasin Ixelles' ? document.getElementById('receveur-ixelles').value : (dest==='B2B' ? document.getElementById('client-b2b').value : '');
   const livreur = localStorage.getItem('userProfile')||'';
@@ -773,14 +741,13 @@ async function submitSortie(){
     }
     // Reset
     document.getElementById('sortie-destination').value='';
-    document.getElementById('sortie-saveur').value='';
+    document.getElementById('sortie-saveur-select').value='';
     document.getElementById('sortie-lots-section').style.display='none';
-    document.getElementById('sortie-ixelles-section').style.display='none';
-    document.getElementById('sortie-saveur-section').style.display='block';
+    document.getElementById('sortie-saveurs-section').style.display='none';
     document.getElementById('receveur-ixelles-section').style.display='none';
     document.getElementById('client-b2b-section').style.display='none';
-    ixellesLots=[];
-    document.getElementById('ixelles-saveurs-added').innerHTML='';
+    sortieLots=[];
+    document.getElementById('saveurs-added').innerHTML='';
   }catch(e){errEl.textContent='❌ Erreur : '+e.message;errEl.classList.add('show');}
   btn.disabled=false;btn.textContent='Enregistrer la sortie';
 }
