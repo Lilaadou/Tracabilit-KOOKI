@@ -285,10 +285,14 @@ tr:hover td { background: #faf8f5; }
   <div class="card">
     <h2>⚠️ Signaler un manquant</h2>
     <label>Code Premix</label>
-    <input type="text" id="mq-code" placeholder="ex: PMX-260603-01" oninput="detectSaveurMq()">
-    <div id="mq-saveur" style="display:none;">
-      <div class="saveur-detected" id="mq-saveur-text"></div>
-    </div>
+    <input type="text" id="mq-code" placeholder="ex: PMX-260603-01">
+    <label>Saveur</label>
+    <select id="mq-saveur">
+      <option value="">— Choisir une saveur —</option>
+      <option>SUZZY</option><option>JACKY</option><option>BENNY</option><option>DAVY</option>
+      <option>MOLLY</option><option>WALLY</option><option>CHARLY</option><option>LENI</option>
+      <option>EMMY</option><option>WOODY</option><option>DANNY</option>
+    </select>
     <label>Ingrédients manquants — tape et appuie sur Entrée</label>
     <div class="tag-area" id="mq-tag-area" onclick="document.getElementById('mq-tag-input').focus()">
       <input type="text" id="mq-tag-input" class="tag-input" placeholder="ex: Chocolat blanc..." onkeydown="handleTagInput(event)">
@@ -549,14 +553,6 @@ async function loadReceptionList(){
 // ===== MANQUANTS =====
 let mqTags = [];
 
-function detectSaveurMq() {
-  const code = document.getElementById('mq-code').value.trim().toUpperCase();
-  const prefix = code.split('-')[0];
-  const saveur = CODE_MAP[prefix];
-  const el = document.getElementById('mq-saveur');
-  if (saveur) { document.getElementById('mq-saveur-text').textContent = '🍪 ' + saveur; el.style.display='block'; }
-  else { el.style.display='none'; }
-}
 
 function handleTagInput(e) {
   if (e.key === 'Enter' || e.key === ',') {
@@ -585,11 +581,11 @@ function removeTag(i) { mqTags.splice(i, 1); renderTags(); }
 
 async function submitManquant() {
   const code = document.getElementById('mq-code').value.trim();
-  const prefix = code.split('-')[0].toUpperCase();
-  const saveur = CODE_MAP[prefix] || '';
+  const saveur = document.getElementById('mq-saveur').value;
   const errEl = document.getElementById('mq-error');
   errEl.classList.remove('show'); document.getElementById('mq-success').classList.remove('show');
   if (!code) { errEl.textContent="⚠️ Renseigne le code premix."; errEl.classList.add('show'); return; }
+  if (!saveur) { errEl.textContent="⚠️ Choisis la saveur."; errEl.classList.add('show'); return; }
   if (!mqTags.length) { errEl.textContent="⚠️ Ajoute au moins un ingrédient manquant."; errEl.classList.add('show'); return; }
   const btn = document.querySelector('#tab-manquants .card:first-child .btn');
   btn.disabled = true; btn.textContent = 'Envoi en cours...';
@@ -597,7 +593,7 @@ async function submitManquant() {
     await sendToSheets({ action: 'manquant', code, saveur, ingredients: mqTags, date: new Date().toISOString() });
     document.getElementById('mq-success').classList.add('show');
     document.getElementById('mq-code').value = '';
-    document.getElementById('mq-saveur').style.display = 'none';
+    document.getElementById('mq-saveur').value = '';
     mqTags = []; renderTags();
   } catch(e) { errEl.textContent = '❌ Erreur : ' + e.message; errEl.classList.add('show'); }
   btn.disabled = false; btn.textContent = "Enregistrer l'alerte";
