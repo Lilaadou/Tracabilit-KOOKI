@@ -203,8 +203,13 @@ tr:hover td { background: #faf8f5; }
   </div>
 
   <div class="card" id="dash-stock-card">
-    <div class="dash-section-title">📦 Lots en stock bas ou épuisés</div>
+    <div class="dash-section-title">📦 Stock par saveur</div>
     <div id="dash-stock-list"><div class="hint">Chargement...</div></div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:10px;font-size:11px;color:#888;flex-wrap:wrap;">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#27ae60;margin-right:3px;"></span>ok (>135)</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e67e22;margin-right:3px;"></span>bas (40-135)</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e74c3c;margin-right:3px;"></span>critique (<40)</span>
+    </div>
   </div>
 
   <div class="card">
@@ -299,7 +304,7 @@ tr:hover td { background: #faf8f5; }
     <div id="production-selected-count" class="selected-count" style="display:none;"></div>
     <div class="success-msg" id="production-success">✅ Enregistré dans Google Sheets !</div>
     <div class="error-msg" id="production-error"></div>
-    <button class="btn" onclick="submitProduction()">Enregistrer dans Google Sheets</button>
+    <button class="btn" id="btn-submit-production" onclick="submitProduction()">Enregistrer dans Google Sheets</button>
   </div>
 </div>
 
@@ -707,7 +712,7 @@ async function submitProduction(){
   if(!factures.length){errEl.textContent="⚠️ Sélectionne au moins une facture.";errEl.classList.add('show');return;}
   localStorage.setItem('productionNom',nom);
   const prefix=code.split('-')[0].toUpperCase();const saveur=CODE_MAP[prefix]||'';
-  const btn=document.querySelector('#tab-production .card:nth-child(2) .btn');btn.disabled=true;btn.textContent='Envoi en cours...';
+  const btn=document.getElementById('btn-submit-production');btn.disabled=true;btn.textContent='Envoi en cours...';
   try{await sendToSheets({action:'production',nom,pmx,code,saveur,big,small,factures});document.getElementById('production-success').classList.add('show');document.getElementById('production-code').value='';document.getElementById('production-pmx').value='';document.getElementById('production-big').value='';document.getElementById('production-small').value='';selectedInvoices.production.clear();loadInvoicesForTab('production');}
   catch(e){errEl.textContent='❌ Erreur : '+e.message;errEl.classList.add('show');}
   btn.disabled=false;btn.textContent='Enregistrer dans Google Sheets';
@@ -900,6 +905,7 @@ async function loadStock(){
       trTitle.innerHTML=`<td colspan="3" style="background:#f5f0eb;font-weight:700;color:#d44218;padding:8px 12px;font-size:13px;">🍪 ${saveur}</td>`;
       tbody.appendChild(trTitle);
       let saveurBig=0, saveurSmall=0;
+      bySaveur[saveur].sort((a,b)=>a.code.localeCompare(b.code)); // FIFO : plus ancien en premier
       bySaveur[saveur].forEach(row=>{
         saveurBig+=row.big; saveurSmall+=row.small;
         const bc=row.big===0?'qty-empty':row.big<=10?'qty-low':'qty-ok';
@@ -1204,25 +1210,47 @@ async function loadDashboard() {
       });
     }
 
-    // Stock bas
+    // Stock par saveur — grille de cadres colorés
     const stList = document.getElementById('dash-stock-list');
-    const lowLots = stockData.filter(r=>(r.big>0||r.small>0)&&(r.big<=10||r.small<=10));
-    const emptyLots = stockData.filter(r=>r.big===0&&r.small===0);
-    if(!lowLots.length&&!emptyLots.length) {
-      stList.innerHTML = '<div class="dash-ok">✅ Tous les stocks sont ok !</div>';
-    } else {
-      stList.innerHTML = '';
-      emptyLots.slice(0,5).forEach(row=>{
-        const div=document.createElement('div'); div.className='stock-mini';
-        div.innerHTML=`<div class="red-dot"></div><div><div class="stock-mini-text">${row.code} — ${row.saveur}</div><div style="font-size:11px;color:#e74c3c;">Épuisé</div></div>`;
-        stList.appendChild(div);
-      });
-      lowLots.forEach(row=>{
-        const div=document.createElement('div'); div.className='stock-mini';
-        div.innerHTML=`<span style="width:8px;height:8px;border-radius:50%;background:#e67e22;flex-shrink:0;display:inline-block;"></span><div style="margin-left:2px;"><div class="stock-mini-text">${row.code} — ${row.saveur}</div><div style="font-size:11px;color:#e67e22;">${row.big} big · ${row.small} small</div></div>`;
-        stList.appendChild(div);
-      });
-    }
+    const bySaveurDash = {};
+    stockData.forEach(r => {
+      if (!bySaveurDash[r.saveur]) bySaveurDash[r.saveur] = {big:0, small:0};
+      bySaveurDash[r.saveur].big += r.big;
+      bySaveurDash[r.saveur].small += r.small;
+    });
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;';
+    SAVEURS.forEach(saveur => {
+      const s = bySaveurDash[saveur] || {big:0, small:0};
+      const big = s.big;
+      let bgColor, borderColor, textColor, statusLabel;
+      const small = s.small;
+      // Couleur big
+      let bigColor;
+      if (big > 135) bigColor = '#1a7a3a';
+      else if (big >= 40) bigColor = '#e67e22';
+      else bigColor = '#e74c3c';
+      // Couleur small
+      let smallColor;
+      if (small > 60) smallColor = '#1a7a3a';
+      else if (small >= 30) smallColor = '#e67e22';
+      else smallColor = '#e74c3c';
+      // Couleur du cadre = la pire des deux
+      const worst = (big <= 40 || small <= 30) ? 'red' : (big <= 135 || small <= 60) ? 'orange' : 'green';
+      if (worst==='green') { bgColor='#f0fff4'; borderColor='#a8e6c3'; }
+      else if (worst==='orange') { bgColor='#fff8e1'; borderColor='#ffd54f'; }
+      else { bgColor='#fde8e8'; borderColor='#f5c6c6'; }
+      const bigLabel = big === 0 ? 'Épuisé' : big+' big';
+      const smallLabel = small === 0 ? '0 small' : small+' small';
+      const div = document.createElement('div');
+      div.style.cssText = `background:${bgColor};border:1.5px solid ${borderColor};border-radius:8px;padding:9px;text-align:center;`;
+      div.innerHTML = `<div style="font-size:11px;font-weight:700;color:#333;margin-bottom:4px;">${saveur}</div>
+        <div style="font-size:13px;font-weight:700;color:${bigColor};">${bigLabel}</div>
+        <div style="font-size:11px;font-weight:600;color:${smallColor};margin-top:2px;">${smallLabel}</div>`;
+      grid.appendChild(div);
+    });
+    stList.innerHTML = '';
+    stList.appendChild(grid);
 
     // Productions récentes (5 dernières)
     const prodList = document.getElementById('dash-prod-list');
