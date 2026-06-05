@@ -107,15 +107,60 @@ tr:hover td { background: #faf8f5; }
 .resolve-btn { font-size: 11px; padding: 4px 10px; background: white; color: #27ae60; border: 1.5px solid #27ae60; border-radius: 6px; cursor: pointer; white-space: nowrap; font-weight: 600; }
 .resolve-btn:hover { background: #d4edda; }
 .saveur-detected { background: #f0f6ff; border-radius: 8px; padding: 10px 13px; font-size: 15px; font-weight: 700; color: #0662aa; margin-bottom: 12px; }
+.profile-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f5f0eb; z-index: 1000; overflow-y: auto; padding: 24px 20px; }
+.profile-screen.show { display: block; }
+.profile-welcome { text-align: center; margin-bottom: 24px; }
+.profile-welcome h2 { font-size: 22px; font-weight: 700; color: #d44218; margin-bottom: 6px; }
+.profile-welcome p { font-size: 14px; color: #888; }
+.profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 400px; margin: 0 auto 20px; }
+.profile-btn { background: white; border: 2px solid #e8e0d8; border-radius: 14px; padding: 16px 10px; text-align: center; cursor: pointer; transition: all 0.15s; }
+.profile-btn:hover { border-color: #d44218; transform: scale(1.02); }
+.profile-btn.selected { border-color: #d44218; background: #fff0ec; }
+.profile-avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: white; margin: 0 auto 8px; }
+.profile-name { font-size: 13px; font-weight: 600; color: #333; }
+.profile-confirm { width: 100%; max-width: 400px; display: block; margin: 0 auto; padding: 15px; background: #ccc; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: not-allowed; transition: all 0.2s; }
+.profile-confirm.active { background: #d44218; cursor: pointer; }
+.profile-confirm.active:hover { background: #b83612; }
+.change-profile-btn { font-size: 11px; color: #888; background: none; border: none; cursor: pointer; text-decoration: underline; margin-left: 8px; }
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.dash-box { background: white; border-radius: 12px; padding: 16px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.dash-num { font-size: 32px; font-weight: 700; line-height: 1; }
+.dash-label { font-size: 12px; color: #888; margin-top: 4px; }
+.dash-num.green { color: #27ae60; }
+.dash-num.orange { color: #e67e22; }
+.dash-num.red { color: #e74c3c; }
+.dash-num.blue { color: #0662aa; }
+.alert-mini { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #fff8f8; border: 1px solid #f5c6c6; border-radius: 8px; margin-bottom: 6px; }
+.alert-mini-text { flex: 1; font-size: 13px; color: #721c24; font-weight: 600; }
+.alert-mini-sub { font-size: 11px; color: #e74c3c; margin-top: 1px; }
+.stock-mini { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #fff8e1; border: 1px solid #ffd54f; border-radius: 8px; margin-bottom: 6px; }
+.stock-mini-text { flex: 1; font-size: 13px; color: #7a6200; font-weight: 600; }
+.prod-mini { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f0f6ff; border: 1px solid #bbdefb; border-radius: 8px; margin-bottom: 6px; }
+.prod-mini-text { flex: 1; font-size: 13px; color: #0662aa; font-weight: 600; }
+.prod-mini-sub { font-size: 11px; color: #0662aa; margin-top: 1px; }
+.dash-section-title { font-size: 13px; font-weight: 700; color: #555; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.dash-ok { text-align: center; padding: 16px; color: #27ae60; font-size: 14px; font-weight: 600; background: #d4edda; border-radius: 8px; }
 </style>
 </head>
 <body>
+<!-- ÉCRAN DE SÉLECTION PROFIL -->
+<div id="profile-screen" class="profile-screen">
+  <div class="profile-welcome">
+    <div style="font-size:48px;margin-bottom:8px;">🍪</div>
+    <h2>Qui es-tu ?</h2>
+    <p>Choisis ton profil pour continuer</p>
+  </div>
+  <div class="profile-grid" id="profile-grid"></div>
+  <button class="profile-confirm" id="profile-confirm" onclick="confirmProfile()">Choisir un profil pour continuer</button>
+</div>
+
 <div class="header">
   <h1>🍪 TRAÇABILITÉ COOKIES</h1>
   <p>Atelier de production</p>
 </div>
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('reception')">RÉCEPTION</div>
+  <div class="tab active" onclick="switchTab('accueil')">🏠 ACCUEIL</div>
+  <div class="tab" onclick="switchTab('reception')">RÉCEPTION</div>
   <div class="tab" onclick="switchTab('premix')">PREMIX</div>
   <div class="tab" onclick="switchTab('production')">PRODUCTION</div>
   <div class="tab" onclick="switchTab('sortie')">SORTIE FRIGO</div>
@@ -124,8 +169,50 @@ tr:hover td { background: #faf8f5; }
   <div class="tab" onclick="switchTab('manquants')">⚠️ MANQUANTS</div>
 </div>
 
+<!-- ACCUEIL -->
+<div id="tab-accueil" class="content active">
+  <div class="card">
+    <h2>👋 <span id="dash-greeting">Bonjour !</span> <button class="change-profile-btn" onclick="showProfileScreen()">Changer</button></h2>
+    <p style="font-size:13px;color:#888;margin-bottom:14px;" id="dash-date"></p>
+    <div class="dash-grid">
+      <div class="dash-box">
+        <div class="dash-num blue" id="dash-total-big">—</div>
+        <div class="dash-label">Big cookies en stock</div>
+      </div>
+      <div class="dash-box">
+        <div class="dash-num blue" id="dash-total-small">—</div>
+        <div class="dash-label">Small cookies en stock</div>
+      </div>
+      <div class="dash-box">
+        <div class="dash-num red" id="dash-alerts">—</div>
+        <div class="dash-label">Alertes manquants</div>
+      </div>
+      <div class="dash-box">
+        <div class="dash-num orange" id="dash-low-stock">—</div>
+        <div class="dash-label">Lots stock bas</div>
+      </div>
+    </div>
+    <button class="btn btn-secondary" onclick="loadDashboard()" style="margin-bottom:0;">🔄 Actualiser</button>
+  </div>
+
+  <div class="card" id="dash-manquants-card">
+    <div class="dash-section-title">⚠️ Ingrédients manquants</div>
+    <div id="dash-manquants-list"><div class="hint">Chargement...</div></div>
+  </div>
+
+  <div class="card" id="dash-stock-card">
+    <div class="dash-section-title">📦 Lots en stock bas ou épuisés</div>
+    <div id="dash-stock-list"><div class="hint">Chargement...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="dash-section-title">🏭 Productions récentes</div>
+    <div id="dash-prod-list"><div class="hint">Chargement...</div></div>
+  </div>
+</div>
+
 <!-- RÉCEPTION -->
-<div id="tab-reception" class="content active">
+<div id="tab-reception" class="content">
   <div class="card">
     <h2>📥 Ajouter une facture</h2>
     <label>Ton prénom</label>
@@ -317,10 +404,11 @@ const selectedInvoices = { premix: new Set(), production: new Set() };
 let currentLots = [];
 
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['reception','premix','production','sortie','stock','factures','manquants'][i]===name));
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['accueil','reception','premix','production','sortie','stock','factures','manquants'][i]===name));
   document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if(name==='premix'||name==='production') loadInvoicesForTab(name);
+  if(name==='accueil') loadDashboard();
 }
 
 function daysAgo(dateStr) {
@@ -633,10 +721,170 @@ async function resolveIngredient(id, index, btn) {
   } catch(e) { btn.disabled = false; btn.textContent = '✅ Résolu'; }
 }
 
+// ===== DASHBOARD =====
+document.getElementById('dash-date').textContent = new Date().toLocaleDateString('fr-BE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+// ===== PROFILS =====
+const PROFILES = [
+  {name:'Lila',      initials:'L',  color:'#d44218', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
+  {name:'Virginia',  initials:'V',  color:'#0662aa', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
+  {name:'Alexandre', initials:'A',  color:'#27ae60', tabs:['accueil','production','stock']},
+  {name:'David D',   initials:'DD', color:'#8e44ad', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
+  {name:'David C',   initials:'DC', color:'#16a085', tabs:['accueil','production','stock']},
+  {name:'Sebastien', initials:'S',  color:'#e67e22', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
+  {name:'Abenazer',  initials:'Ab', color:'#c0392b', tabs:['accueil','reception','premix','production','sortie','stock','factures','manquants']},
+  {name:'Noémie',    initials:'N',  color:'#2980b9', tabs:['accueil','sortie']},
+  {name:'Délia',     initials:'Dé', color:'#d44218', tabs:['accueil','sortie']},
+  {name:'Meg',       initials:'M',  color:'#0662aa', tabs:['accueil','premix','production','sortie','stock']},
+];
+const ALL_TABS = ['accueil','reception','premix','production','sortie','stock','factures','manquants'];
+let selectedProfile = null;
+
+function buildProfileGrid() {
+  const grid = document.getElementById('profile-grid');
+  grid.innerHTML = '';
+  PROFILES.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'profile-btn';
+    div.innerHTML = `<div class="profile-avatar" style="background:${p.color};">${p.initials}</div><div class="profile-name">${p.name}</div>`;
+    div.onclick = () => {
+      document.querySelectorAll('.profile-btn').forEach(b => b.classList.remove('selected'));
+      div.classList.add('selected');
+      selectedProfile = p.name;
+      const btn = document.getElementById('profile-confirm');
+      btn.textContent = `C'est moi, ${p.name} ! Continuer →`;
+      btn.classList.add('active');
+    };
+    grid.appendChild(div);
+  });
+}
+
+function confirmProfile() {
+  if (!selectedProfile) return;
+  localStorage.setItem('userProfile', selectedProfile);
+  document.getElementById('profile-screen').classList.remove('show');
+  updateGreeting();
+  applyTabPermissions(selectedProfile);
+}
+
+function showProfileScreen() {
+  selectedProfile = null;
+  buildProfileGrid();
+  document.getElementById('profile-confirm').textContent = 'Choisir un profil pour continuer';
+  document.getElementById('profile-confirm').classList.remove('active');
+  document.getElementById('profile-screen').classList.add('show');
+}
+
+function updateGreeting() {
+  const profile = localStorage.getItem('userProfile');
+  document.getElementById('dash-greeting').textContent = profile ? `Bonjour ${profile} !` : 'Bonjour !';
+}
+
+function applyTabPermissions(profileName) {
+  const profile = PROFILES.find(p => p.name === profileName);
+  const allowedTabs = profile ? profile.tabs : ALL_TABS;
+  const tabNames = ['accueil','reception','premix','production','sortie','stock','factures','manquants'];
+  document.querySelectorAll('.tab').forEach((tab, i) => {
+    const tabName = tabNames[i];
+    tab.style.display = allowedTabs.includes(tabName) ? '' : 'none';
+  });
+  // Aller vers le premier onglet autorisé
+  const firstTab = allowedTabs[0];
+  if (firstTab) switchTab(firstTab);
+}
+
+// Init : afficher l'écran de profil si pas encore choisi
+buildProfileGrid();
+const savedProfile = localStorage.getItem('userProfile');
+if (!savedProfile) {
+  document.getElementById('profile-screen').classList.add('show');
+} else {
+  updateGreeting();
+  applyTabPermissions(savedProfile);
+}
+
+async function loadDashboard() {
+  try {
+    const [stockRes, manquantsRes, facturesRes] = await Promise.all([
+      fetch(SCRIPT_URL+'?action=getStock'),
+      fetch(SCRIPT_URL+'?action=getManquants'),
+      fetch(SCRIPT_URL+'?action=getFactures')
+    ]);
+    const stockData = await stockRes.json();
+    const manquantsData = await manquantsRes.json();
+    const facturesData = await facturesRes.json();
+
+    // Totaux stock
+    let totalBig=0, totalSmall=0, lowCount=0;
+    stockData.forEach(row=>{
+      if(row.big===0&&row.small===0) return;
+      totalBig+=row.big; totalSmall+=row.small;
+      if(row.big<=10||row.small<=10) lowCount++;
+    });
+    document.getElementById('dash-total-big').textContent = totalBig;
+    document.getElementById('dash-total-small').textContent = totalSmall;
+    document.getElementById('dash-low-stock').textContent = lowCount;
+    document.getElementById('dash-low-stock').className = 'dash-num ' + (lowCount>0?'orange':'green');
+
+    // Alertes manquants
+    document.getElementById('dash-alerts').textContent = manquantsData.length;
+    document.getElementById('dash-alerts').className = 'dash-num ' + (manquantsData.length>0?'red':'green');
+
+    // Liste manquants
+    const mqList = document.getElementById('dash-manquants-list');
+    if(!manquantsData.length) {
+      mqList.innerHTML = '<div class="dash-ok">✅ Aucun ingrédient manquant !</div>';
+    } else {
+      mqList.innerHTML = '';
+      manquantsData.forEach(alert=>{
+        const div=document.createElement('div'); div.className='alert-mini';
+        div.innerHTML=`<div class="red-dot"></div><div><div class="alert-mini-text">🍪 ${alert.saveur||'?'} — ${alert.code}</div><div class="alert-mini-sub">${alert.ingredients.join(', ')}</div></div>`;
+        mqList.appendChild(div);
+      });
+    }
+
+    // Stock bas
+    const stList = document.getElementById('dash-stock-list');
+    const lowLots = stockData.filter(r=>(r.big>0||r.small>0)&&(r.big<=10||r.small<=10));
+    const emptyLots = stockData.filter(r=>r.big===0&&r.small===0);
+    if(!lowLots.length&&!emptyLots.length) {
+      stList.innerHTML = '<div class="dash-ok">✅ Tous les stocks sont ok !</div>';
+    } else {
+      stList.innerHTML = '';
+      emptyLots.slice(0,5).forEach(row=>{
+        const div=document.createElement('div'); div.className='stock-mini';
+        div.innerHTML=`<div class="red-dot"></div><div><div class="stock-mini-text">${row.code} — ${row.saveur}</div><div style="font-size:11px;color:#e74c3c;">Épuisé</div></div>`;
+        stList.appendChild(div);
+      });
+      lowLots.forEach(row=>{
+        const div=document.createElement('div'); div.className='stock-mini';
+        div.innerHTML=`<span style="width:8px;height:8px;border-radius:50%;background:#e67e22;flex-shrink:0;display:inline-block;"></span><div style="margin-left:2px;"><div class="stock-mini-text">${row.code} — ${row.saveur}</div><div style="font-size:11px;color:#e67e22;">${row.big} big · ${row.small} small</div></div>`;
+        stList.appendChild(div);
+      });
+    }
+
+    // Productions récentes (5 dernières)
+    const prodList = document.getElementById('dash-prod-list');
+    const recent = facturesData.slice(-5).reverse();
+    if(!recent.length) {
+      prodList.innerHTML = '<div class="hint">Aucune production enregistrée</div>';
+    } else {
+      prodList.innerHTML = '';
+      recent.forEach(row=>{
+        const div=document.createElement('div'); div.className='prod-mini';
+        div.innerHTML=`<span style="font-size:18px;">🍪</span><div><div class="prod-mini-text">${row.codeProduction||'-'}</div><div class="prod-mini-sub">${row.responsable||''} · Premix ${row.premix||'-'}</div></div>`;
+        prodList.appendChild(div);
+      });
+    }
+  } catch(e) {
+    console.error(e);
+  }
+}
+
 const sN=localStorage.getItem('premixNom');if(sN)document.getElementById('premix-nom').value=sN;
 const sNP=localStorage.getItem('productionNom');if(sNP)document.getElementById('production-nom').value=sNP;
 const sNR=localStorage.getItem('receptionNom');if(sNR)document.getElementById('reception-nom').value=sNR;
-loadReceptionList();
+loadDashboard();
 </script>
 </body>
 </html>
