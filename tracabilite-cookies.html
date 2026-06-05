@@ -271,6 +271,12 @@ tr:hover td { background: #faf8f5; }
 
 <!-- PRODUCTION -->
 <div id="tab-production" class="content">
+  <div class="card" id="prod-alerts-card">
+    <h2>🚨 Pâtes à produire</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:12px;">Stock en dessous du minimum (big : 135 · small : 60)</p>
+    <div id="prod-alerts-list"><div class="hint">Chargement...</div></div>
+    <button class="btn btn-secondary" onclick="loadProductionAlerts()" style="margin-top:8px;">🔄 Actualiser</button>
+  </div>
   <div class="card">
     <h2>🏭 Saisie Production</h2>
     <label>Prénom</label>
@@ -312,19 +318,6 @@ tr:hover td { background: #faf8f5; }
       <option>Usage interne</option>
     </select>
 
-    <!-- Receveur Ixelles -->
-    <div id="receveur-ixelles-section" style="display:none;">
-      <label>Receveur au magasin</label>
-      <select id="receveur-ixelles">
-        <option value="Magasin Ixelles">Magasin Ixelles (sans présence)</option>
-        <option>DOUDOU Lila</option>
-        <option>KUNNEN Virginia</option>
-        <option>DERIDDER David</option>
-        <option>LAMBIOTTE Noémie</option>
-        <option>RUETTNER Délia</option>
-        <option>DOLLINGER Meg</option>
-      </select>
-    </div>
 
     <!-- Client B2B -->
     <div id="client-b2b-section" style="display:none;">
@@ -413,8 +406,8 @@ tr:hover td { background: #faf8f5; }
     <div class="error-msg" id="factures-error"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Code Production</th><th>Premix</th><th>Responsable</th><th>Factures</th></tr></thead>
-        <tbody id="factures-tbody"><tr><td colspan="4" class="empty-state">Appuie sur Actualiser</td></tr></tbody>
+        <thead><tr><th>Code Production</th><th>Premix</th><th>Responsable</th><th>Factures Production</th><th>Factures Premix</th><th>N° Facture Virginia</th></tr></thead>
+        <tbody id="factures-tbody"><tr><td colspan="6" class="empty-state">Appuie sur Actualiser</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -450,7 +443,7 @@ tr:hover td { background: #faf8f5; }
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz16R8wEwXLjE1P_94uZ7X8jWoADjWTXQ7h_5ZM_CmTDT_IVBA1x1kCub3DF7ERAelV/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzczPn0fGpwgBVBFKgkDRBsU3KoogOVwlbagGtMgXXou5zB7F9nT9FiH63RuiF2ymst/exec';
 const SAVEURS = ['SUZZY','JACKY','BENNY','DAVY','MOLLY','WALLY','CHARLY','LENI','EMMY','WOODY','DANNY'];
 const CODE_MAP = {'SUZ':'SUZZY','JAC':'JACKY','BEN':'BENNY','DAV':'DAVY','MOL':'MOLLY','WAL':'WALLY','CHA':'CHARLY','LEN':'LENI','EMM':'EMMY','WOO':'WOODY','DAN':'DANNY'};
 const selectedInvoices = { premix: new Set(), production: new Set() };
@@ -461,6 +454,7 @@ function switchTab(name) {
   document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if(name==='premix'||name==='production') loadInvoicesForTab(name);
+  if(name==='production') loadProductionAlerts();
   if(name==='accueil') loadDashboard();
 }
 
@@ -533,7 +527,6 @@ function checkSortieDestination() {
   const dest = document.getElementById('sortie-destination').value;
   if(dest) document.getElementById('sortie-destination').classList.add('filled');
   else document.getElementById('sortie-destination').classList.remove('filled');
-  document.getElementById('receveur-ixelles-section').style.display = dest==='Magasin Ixelles' ? 'block' : 'none';
   document.getElementById('client-b2b-section').style.display = dest==='B2B' ? 'block' : 'none';
   document.getElementById('client-info').style.display = 'none';
   document.getElementById('sortie-saveurs-section').style.display = dest ? 'block' : 'none';
@@ -730,7 +723,7 @@ async function submitSortie(){
   const selectedLots = sortieLots;
   const saveur = [...new Set(sortieLots.map(l=>l.saveur))].join(', ');
 
-  const receveur = dest==='Magasin Ixelles' ? document.getElementById('receveur-ixelles').value : (dest==='B2B' ? document.getElementById('client-b2b').value : '');
+  const receveur = dest==='B2B' ? document.getElementById('client-b2b').value : dest;
   const livreur = localStorage.getItem('userProfile')||'';
   const btn=document.querySelector('#tab-sortie .btn');btn.disabled=true;btn.textContent='Envoi en cours...';
   try{
@@ -744,7 +737,6 @@ async function submitSortie(){
     document.getElementById('sortie-saveur-select').value='';
     document.getElementById('sortie-lots-section').style.display='none';
     document.getElementById('sortie-saveurs-section').style.display='none';
-    document.getElementById('receveur-ixelles-section').style.display='none';
     document.getElementById('client-b2b-section').style.display='none';
     sortieLots=[];
     document.getElementById('saveurs-added').innerHTML='';
@@ -846,6 +838,45 @@ function generateBonLivraison(dest, receveur, livreur, lots, saveur) {
   URL.revokeObjectURL(url);
 }
 
+// ===== ALERTES PRODUCTION =====
+const MIN_BIG = 135;
+const MIN_SMALL = 60;
+
+async function loadProductionAlerts() {
+  const listEl = document.getElementById('prod-alerts-list');
+  listEl.innerHTML = '<div class="hint">Chargement...</div>';
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=getStock');
+    const data = await res.json();
+    // Agréger par saveur
+    const bySaveur = {};
+    data.forEach(row => {
+      if (!bySaveur[row.saveur]) bySaveur[row.saveur] = {big:0, small:0};
+      bySaveur[row.saveur].big += row.big;
+      bySaveur[row.saveur].small += row.small;
+    });
+    const alerts = SAVEURS.filter(s => bySaveur[s] && (bySaveur[s].big < MIN_BIG || bySaveur[s].small < MIN_SMALL));
+    if (!alerts.length) {
+      listEl.innerHTML = '<div style="background:#d4edda;color:#155724;border-radius:8px;padding:12px;text-align:center;font-weight:600;">✅ Tous les stocks sont au-dessus du minimum !</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    alerts.forEach(saveur => {
+      const s = bySaveur[saveur] || {big:0, small:0};
+      const bigAlert = s.big < MIN_BIG;
+      const smallAlert = s.small < MIN_SMALL;
+      const div = document.createElement('div');
+      div.style.cssText = 'background:#fff8f8;border:1.5px solid #f5c6c6;border-radius:8px;padding:12px;margin-bottom:8px;';
+      div.innerHTML = `<div style="font-size:14px;font-weight:700;color:#d44218;margin-bottom:6px;">🍪 ${saveur}</div>` +
+        (bigAlert ? `<div style="font-size:13px;color:#721c24;">🔴 Big cookies : ${s.big} / ${MIN_BIG} minimum</div>` : `<div style="font-size:13px;color:#27ae60;">✅ Big cookies : ${s.big} ok</div>`) +
+        (smallAlert ? `<div style="font-size:13px;color:#721c24;margin-top:3px;">🔴 Small cookies : ${s.small} / ${MIN_SMALL} minimum</div>` : `<div style="font-size:13px;color:#27ae60;margin-top:3px;">✅ Small cookies : ${s.small} ok</div>`);
+      listEl.appendChild(div);
+    });
+  } catch(e) {
+    listEl.innerHTML = '<div class="hint">❌ Impossible de charger</div>';
+  }
+}
+
 // ===== STOCK =====
 async function loadStock(){
   const tbody=document.getElementById('stock-tbody');tbody.innerHTML='<tr><td colspan="3" class="empty-state">Chargement...</td></tr>';
@@ -868,13 +899,20 @@ async function loadStock(){
       const trTitle=document.createElement('tr');
       trTitle.innerHTML=`<td colspan="3" style="background:#f5f0eb;font-weight:700;color:#d44218;padding:8px 12px;font-size:13px;">🍪 ${saveur}</td>`;
       tbody.appendChild(trTitle);
+      let saveurBig=0, saveurSmall=0;
       bySaveur[saveur].forEach(row=>{
+        saveurBig+=row.big; saveurSmall+=row.small;
         const bc=row.big===0?'qty-empty':row.big<=10?'qty-low':'qty-ok';
         const sc=row.small===0?'qty-empty':row.small<=10?'qty-low':'qty-ok';
         const tr=document.createElement('tr');
         tr.innerHTML=`<td style="padding-left:20px;font-weight:600;">${row.code}</td><td class="${bc}">${row.big}</td><td class="${sc}">${row.small}</td>`;
         tbody.appendChild(tr);
       });
+      // Total par saveur
+      const trTotal=document.createElement('tr');
+      const bcT=saveurBig<=10?'qty-low':'qty-ok'; const scT=saveurSmall<=10?'qty-low':'qty-ok';
+      trTotal.innerHTML=`<td style="padding-left:20px;font-style:italic;color:#888;font-size:12px;">Total ${saveur}</td><td class="${bcT}" style="font-weight:700;">${saveurBig}</td><td class="${scT}" style="font-weight:700;">${saveurSmall}</td>`;
+      tbody.appendChild(trTotal);
     });
     document.getElementById('total-big').textContent=totalBig;document.getElementById('total-small').textContent=totalSmall;
     document.getElementById('stock-success').textContent='✅ Stock mis à jour';document.getElementById('stock-success').classList.add('show');
@@ -888,9 +926,41 @@ async function loadPremixRecap(){
 }
 
 async function loadFactures(){
-  const tbody=document.getElementById('factures-tbody');tbody.innerHTML='<tr><td colspan="4" class="empty-state">Chargement...</td></tr>';
-  try{const res=await fetch(SCRIPT_URL+'?action=getFactures');const data=await res.json();tbody.innerHTML='';if(!data.length){tbody.innerHTML='<tr><td colspan="4" class="empty-state">Aucune donnée</td></tr>';return;}data.forEach(row=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${row.codeProduction||'-'}</td><td>${row.premix||'-'}</td><td>${row.responsable||'-'}</td><td>${(row.factures||[]).join(', ')}</td>`;tbody.appendChild(tr);});document.getElementById('factures-success').textContent=`✅ ${data.length} lot(s) chargé(s)`;document.getElementById('factures-success').classList.add('show');}
+  const tbody=document.getElementById('factures-tbody');
+  tbody.innerHTML='<tr><td colspan="6" class="empty-state">Chargement...</td></tr>';
+  try{
+    const [factRes, premixRes] = await Promise.all([
+      fetch(SCRIPT_URL+'?action=getFactures'),
+      fetch(SCRIPT_URL+'?action=getPremix')
+    ]);
+    const data = await factRes.json();
+    const premixData = await premixRes.json();
+    // Index premix par code
+    const premixIndex = {};
+    premixData.forEach(p => { premixIndex[p.codePremix] = p.factures||[]; });
+    tbody.innerHTML='';
+    if(!data.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">Aucune donnée</td></tr>';return;}
+    data.forEach(row=>{
+      const premixFactures = premixIndex[row.premix]||[];
+      const savedNum = localStorage.getItem('factNum_'+row.codeProduction)||'';
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td style="font-weight:600;">${row.codeProduction||'-'}</td>
+        <td>${row.premix||'-'}</td>
+        <td>${row.responsable||'-'}</td>
+        <td>${(row.factures||[]).join(', ')||'-'}</td>
+        <td>${premixFactures.join(', ')||'-'}</td>
+        <td><input type="text" value="${savedNum}" placeholder="À compléter..." style="border:1px solid #e8e0d8;border-radius:6px;padding:5px 8px;font-size:12px;width:140px;margin-bottom:0;" onchange="saveFactNum('${row.codeProduction}',this.value)"></td>`;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('factures-success').textContent=`✅ ${data.length} lot(s) chargé(s)`;
+    document.getElementById('factures-success').classList.add('show');
+  }
   catch(e){document.getElementById('factures-error').textContent='❌ Impossible de charger.';document.getElementById('factures-error').classList.add('show');}
+}
+
+function saveFactNum(code, value) {
+  localStorage.setItem('factNum_'+code, value);
 }
 
 async function loadReceptionList(){
