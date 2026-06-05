@@ -443,7 +443,7 @@ tr:hover td { background: #faf8f5; }
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzczPn0fGpwgBVBFKgkDRBsU3KoogOVwlbagGtMgXXou5zB7F9nT9FiH63RuiF2ymst/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFDHuFHQ7e61gnR3D0s-YjpTeBLCfCNEgRSfbwiXOslCPvUBnTceblkWWXkgnvCiCV/exec';
 const SAVEURS = ['SUZZY','JACKY','BENNY','DAVY','MOLLY','WALLY','CHARLY','LENI','EMMY','WOODY','DANNY'];
 const CODE_MAP = {'SUZ':'SUZZY','JAC':'JACKY','BEN':'BENNY','DAV':'DAVY','MOL':'MOLLY','WAL':'WALLY','CHA':'CHARLY','LEN':'LENI','EMM':'EMMY','WOO':'WOODY','DAN':'DANNY'};
 const selectedInvoices = { premix: new Set(), production: new Set() };
@@ -959,8 +959,13 @@ async function loadFactures(){
   catch(e){document.getElementById('factures-error').textContent='❌ Impossible de charger.';document.getElementById('factures-error').classList.add('show');}
 }
 
-function saveFactNum(code, value) {
+async function saveFactNum(code, value) {
   localStorage.setItem('factNum_'+code, value);
+  if (value) {
+    try {
+      await sendToSheets({ action: 'saveFactureVirginia', codeProduction: code, numeroFacture: value });
+    } catch(e) { console.error('Erreur sauvegarde facture:', e); }
+  }
 }
 
 async function loadReceptionList(){
