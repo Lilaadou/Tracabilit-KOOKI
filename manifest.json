@@ -1,0 +1,20 @@
+{
+  "name": "Traçabilité KOOKI",
+  "short_name": "KOOKI",
+  "start_url": "/Tracabilit-KOOKI/",
+  "display": "standalone",
+  "background_color": "#f5f0eb",
+  "theme_color": "#d44218",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
