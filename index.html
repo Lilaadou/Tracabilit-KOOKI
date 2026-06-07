@@ -260,8 +260,18 @@ tr:hover td { background: #faf8f5; }
     <h2>📥 Ajouter une facture</h2>
     <label>Ton prénom</label>
     <input type="text" id="reception-nom" placeholder="ex: Virginia">
-    <label>Fournisseur (auto-détecté ou saisis)</label>
-    <input type="text" id="reception-fournisseur" placeholder="ex: Foodflow BE">
+    <label>Fournisseur</label>
+    <select id="reception-fournisseur">
+      <option value="">— Choisir un fournisseur —</option>
+      <option>Foodflow</option>
+      <option>Bruyerre</option>
+      <option>Makadi</option>
+      <option>Hygiena</option>
+      <option>Foodflow</option>
+      <option>The Notten Shop</option>
+      <option>Colruyt</option>
+      <option>Cilgro</option>
+    </select>
     <label>N° Facture (auto-détecté)</label>
     <input type="text" id="reception-numero" placeholder="ex: INV/2026/01562">
     <div class="processing" id="reception-processing"><div class="spinner"></div><span>Lecture du PDF...</span></div>
@@ -286,9 +296,16 @@ tr:hover td { background: #faf8f5; }
     <h2>🧁 Saisie Premix</h2>
     <label>Ton prénom</label>
     <input type="text" id="premix-nom" placeholder="ex: Lila">
+    <label>Saveur</label>
+    <select id="premix-saveur">
+      <option value="">— Choisir une saveur —</option>
+      <option>SUZZY</option><option>JACKY</option><option>BENNY</option><option>DAVY</option>
+      <option>MOLLY</option><option>WALLY</option><option>CHARLY</option><option>LENI</option>
+      <option>EMMY</option><option>WOODY</option><option>DANNY</option>
+    </select>
+
     <label>Code Premix</label>
-    <input type="text" id="premix-code" placeholder="ex: PMX-260603-01">
-  </div>
+    <input type="text" id="premix-code" placeholder="ex: PMX-260603-01">div>
   <div class="card">
     <h2>📋 Factures utilisées</h2>
     <p style="font-size:13px;color:#888;margin-bottom:12px;">Coche les factures utilisées pour ce lot :</p>
@@ -304,8 +321,8 @@ tr:hover td { background: #faf8f5; }
     <div class="success-msg" id="premix-recap-success"></div>
     <div class="error-msg" id="premix-recap-error"></div>
     <div class="table-wrap">
-      <table><thead><tr><th>Code Premix</th><th>Factures</th></tr></thead>
-      <tbody id="premix-recap-tbody"><tr><td colspan="2" class="empty-state">Appuie sur Actualiser</td></tr></tbody></table>
+      <table><thead><tr><th>Code Premix</th><th>Saveur</th><th>Factures</th></tr></thead>
+      <tbody id="premix-recap-tbody"><tr><td colspan="3" class="empty-state">Appuie sur Actualiser</td></tr></tbody></table>
     </div>
   </div>
 </div>
@@ -322,8 +339,11 @@ tr:hover td { background: #faf8f5; }
     <h2>🏭 Saisie Production</h2>
     <label>Prénom</label>
     <input type="text" id="production-nom" placeholder="ex: Alexandre">
-    <label>Code Premix utilisé</label>
-    <input type="text" id="production-pmx" placeholder="ex: PMX-260603-01">
+    <label>Premix utilisé</label>
+    <select id="production-pmx" onchange="onPremixSelected()">
+      <option value="">— Choisir un premix —</option>
+    </select>
+    <div id="premix-saveur-detected" style="display:none;background:#f0f6ff;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:14px;font-weight:600;color:#0662aa;"></div>
     <label>Code Production</label>
     <input type="text" id="production-code" placeholder="ex: SUZ-260604-01">
     <div class="divider"></div>
@@ -408,7 +428,7 @@ tr:hover td { background: #faf8f5; }
     <div class="error-msg" id="historique-error"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Date</th><th>Lot</th><th>Saveur</th><th>Destination</th><th>Big</th><th>Small</th><th>Produit par</th><th>Premix</th></tr></thead>
+        <thead><tr><th>Date</th><th>Lot</th><th>Saveur</th><th>Destination</th><th>Client</th><th>Big</th><th>Small</th><th>Produit par</th></tr></thead>
         <tbody id="historique-tbody"><tr><td colspan="8" class="empty-state">Appuie sur Actualiser</td></tr></tbody>
       </table>
     </div>
@@ -486,7 +506,7 @@ tr:hover td { background: #faf8f5; }
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFDHuFHQ7e61gnR3D0s-YjpTeBLCfCNEgRSfbwiXOslCPvUBnTceblkWWXkgnvCiCV/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzADWVhY5GdbbV05_9APNA2CEi_eHHlchn_AoT2uj4-VDpVF6ky36Vlt6Zt_m-HJHWP/exec';
 const SUPABASE_URL = 'https://alwxxplqsxauwevcdhaa.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsd3h4cGxxc3hhdXdldmNkaGFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2ODYwNzQsImV4cCI6MjA5NjI2MjA3NH0.wtx_ZrU977d7XyO9fGOZ34u3i6KZZfYkoGLcF_38v4w';
 const sbHeaders = {'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY};
@@ -521,8 +541,10 @@ function switchTab(name) {
   document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if(name==='premix'||name==='production') loadInvoicesForTab(name);
+  if(name==='production') loadAvailablePremix();
   if(name==='production') loadProductionAlerts();
   if(name==='accueil') loadDashboard();
+loadAvailablePremix();
 }
 
 function daysAgo(dateStr) {
@@ -532,6 +554,34 @@ function daysAgo(dateStr) {
 }
 
 document.getElementById('sortie-date').textContent = '📅 ' + new Date().toLocaleDateString('fr-BE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+// ===== PREMIX DISPONIBLES =====
+async function loadAvailablePremix() {
+  const sel = document.getElementById('production-pmx');
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="">— Choisir un premix —</option>';
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=getAvailablePremix');
+    const data = await res.json();
+    data.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.codePremix;
+      opt.dataset.saveur = p.saveur||'';
+      opt.textContent = `${p.codePremix}${p.saveur ? ' — ' + p.saveur : ''}`;
+      sel.appendChild(opt);
+    });
+    if(currentVal) sel.value = currentVal;
+  } catch(e) { console.error('Erreur chargement premix:', e); }
+}
+
+function onPremixSelected() {
+  const sel = document.getElementById('production-pmx');
+  const opt = sel.options[sel.selectedIndex];
+  const saveur = opt ? opt.dataset.saveur : '';
+  const det = document.getElementById('premix-saveur-detected');
+  if(saveur) { det.textContent = '🍪 Saveur : ' + saveur; det.style.display='block'; }
+  else { det.style.display='none'; }
+}
 
 // ===== INVOICES =====
 async function loadInvoicesForTab(tab) {
@@ -743,7 +793,7 @@ async function sendToSheets(data){await fetch(SCRIPT_URL,{method:'POST',mode:'no
 async function submitReception(){
   const nom=document.getElementById('reception-nom').value.trim();const fournisseur=document.getElementById('reception-fournisseur').value.trim();const numero=document.getElementById('reception-numero').value.trim();
   const errEl=document.getElementById('reception-error');errEl.classList.remove('show');document.getElementById('reception-success').classList.remove('show');
-  if(!fournisseur){errEl.textContent="⚠️ Renseigne le fournisseur.";errEl.classList.add('show');return;}
+  if(!fournisseur){errEl.textContent="⚠️ Choisis un fournisseur.";errEl.classList.add('show');return;}
   if(!numero){errEl.textContent="⚠️ Renseigne le numéro de facture.";errEl.classList.add('show');return;}
   localStorage.setItem('receptionNom',nom);
   const btn=document.querySelector('#tab-reception .card:first-child .btn');btn.disabled=true;btn.textContent='Envoi en cours...';
@@ -753,13 +803,14 @@ async function submitReception(){
 }
 
 async function submitPremix(){
-  const nom=document.getElementById('premix-nom').value.trim();const code=document.getElementById('premix-code').value.trim();const factures=[...selectedInvoices.premix];
+  const nom=document.getElementById('premix-nom').value.trim();const code=document.getElementById('premix-code').value.trim();const saveur=document.getElementById('premix-saveur').value;const factures=[...selectedInvoices.premix];
   const errEl=document.getElementById('premix-error');errEl.classList.remove('show');document.getElementById('premix-success').classList.remove('show');
+  if(!saveur){errEl.textContent="⚠️ Choisis une saveur.";errEl.classList.add('show');return;}
   if(!code){errEl.textContent="⚠️ Renseigne le code premix.";errEl.classList.add('show');return;}
   if(!factures.length){errEl.textContent="⚠️ Sélectionne au moins une facture.";errEl.classList.add('show');return;}
   localStorage.setItem('premixNom',nom);
   const btn=document.querySelector('#tab-premix .card:nth-child(2) .btn');btn.disabled=true;btn.textContent='Envoi en cours...';
-  try{await sendToSheets({action:'premix',nom,code,factures});document.getElementById('premix-success').classList.add('show');document.getElementById('premix-code').value='';selectedInvoices.premix.clear();loadInvoicesForTab('premix');}
+  try{await sendToSheets({action:'premix',nom,code,saveur,factures});document.getElementById('premix-success').classList.add('show');document.getElementById('premix-code').value='';document.getElementById('premix-saveur').value='';selectedInvoices.premix.clear();loadInvoicesForTab('premix');loadAvailablePremix();}
   catch(e){errEl.textContent='❌ Erreur : '+e.message;errEl.classList.add('show');}
   btn.disabled=false;btn.textContent='Enregistrer dans Google Sheets';
 }
@@ -773,9 +824,11 @@ async function submitProduction(){
   if(!code){errEl.textContent="⚠️ Renseigne le code production.";errEl.classList.add('show');return;}
   if(!factures.length){errEl.textContent="⚠️ Sélectionne au moins une facture.";errEl.classList.add('show');return;}
   localStorage.setItem('productionNom',nom);
-  const prefix=code.split('-')[0].toUpperCase();const saveur=CODE_MAP[prefix]||'';
+  const pmxSel = document.getElementById('production-pmx');
+  const pmxOpt = pmxSel.options[pmxSel.selectedIndex];
+  const saveur = (pmxOpt && pmxOpt.dataset.saveur) ? pmxOpt.dataset.saveur : (CODE_MAP[code.split('-')[0].toUpperCase()]||'');
   const btn=document.getElementById('btn-submit-production');btn.disabled=true;btn.textContent='Envoi en cours...';
-  try{await sendToSheets({action:'production',nom,pmx,code,saveur,big,small,factures});document.getElementById('production-success').classList.add('show');document.getElementById('production-code').value='';document.getElementById('production-pmx').value='';document.getElementById('production-big').value='';document.getElementById('production-small').value='';selectedInvoices.production.clear();loadInvoicesForTab('production');}
+  try{await sendToSheets({action:'production',nom,pmx,code,saveur,big,small,factures});document.getElementById('production-success').classList.add('show');document.getElementById('production-code').value='';document.getElementById('production-pmx').value='';document.getElementById('premix-saveur-detected').style.display='none';document.getElementById('production-big').value='';document.getElementById('production-small').value='';selectedInvoices.production.clear();loadInvoicesForTab('production');loadAvailablePremix();}
   catch(e){errEl.textContent='❌ Erreur : '+e.message;errEl.classList.add('show');}
   btn.disabled=false;btn.textContent='Enregistrer dans Google Sheets';
 }
@@ -1005,8 +1058,19 @@ async function loadStock(){
 }
 
 async function loadPremixRecap(){
-  const tbody=document.getElementById('premix-recap-tbody');tbody.innerHTML='<tr><td colspan="2" class="empty-state">Chargement...</td></tr>';
-  try{const res=await fetch(SCRIPT_URL+'?action=getPremix');const data=await res.json();tbody.innerHTML='';if(!data.length){tbody.innerHTML='<tr><td colspan="2" class="empty-state">Aucune donnée</td></tr>';return;}data.forEach(row=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${row.codePremix||'-'}</td><td>${(row.factures||[]).join(', ')}</td>`;tbody.appendChild(tr);});document.getElementById('premix-recap-success').textContent=`✅ ${data.length} premix chargé(s)`;document.getElementById('premix-recap-success').classList.add('show');}
+  const tbody=document.getElementById('premix-recap-tbody');tbody.innerHTML='<tr><td colspan="3" class="empty-state">Chargement...</td></tr>';
+  try{
+    const res=await fetch(SCRIPT_URL+'?action=getPremix');
+    const data=await res.json();
+    tbody.innerHTML='';
+    if(!data.length){tbody.innerHTML='<tr><td colspan="3" class="empty-state">Aucune donnée</td></tr>';return;}
+    [...data].reverse().forEach(row=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${row.codePremix||'-'}</td><td>${row.saveur||'-'}</td><td>${(row.factures||[]).join(', ')||'-'}</td>`;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('premix-recap-success').textContent=`✅ ${data.length} premix chargé(s)`;
+    document.getElementById('premix-recap-success').classList.add('show');}
   catch(e){document.getElementById('premix-recap-error').textContent='❌ Impossible de charger.';document.getElementById('premix-recap-error').classList.add('show');}
 }
 
@@ -1073,7 +1137,7 @@ async function loadHistorique(){
       const d=new Date(row.date);
       const dateStr=isNaN(d)?'-':d.toLocaleDateString('fr-BE',{day:'numeric',month:'short'});
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${dateStr}</td><td style="font-weight:600;">${row.lot||'-'}</td><td>${row.saveur||'-'}</td><td>${row.destination||'-'}</td><td class="qty-ok">${row.big||0}</td><td class="qty-ok">${row.small||0}</td><td>${row.producteur||'-'}</td><td>${row.premix||'-'}</td>`;
+      tr.innerHTML=`<td>${dateStr}</td><td style="font-weight:600;">${row.lot||'-'}</td><td>${row.saveur||'-'}</td><td>${row.destination||'-'}</td><td>${row.receveur&&row.destination==='B2B'?row.receveur:'-'}</td><td class="qty-ok">${row.big||0}</td><td class="qty-ok">${row.small||0}</td><td>${row.producteur||'-'}</td>`;
       tbody.appendChild(tr);
     });
     document.getElementById('historique-success').textContent=`✅ ${data.length} sortie(s) chargée(s)`;
@@ -1194,8 +1258,7 @@ function buildProfileGrid() {
     div.className = 'profile-btn';
     div.innerHTML = `
       <div class="profile-avatar" style="background:${p.color};">${p.initials}</div>
-      <div class="profile-name">${p.name}</div>
-      <div style="font-size:10px;color:#888;margin-top:2px;">${p.role}</div>`;
+      <div class="profile-name">${p.name}</div>`;
     div.onclick = () => {
       document.querySelectorAll('.profile-btn').forEach(b => b.classList.remove('selected'));
       div.classList.add('selected');
